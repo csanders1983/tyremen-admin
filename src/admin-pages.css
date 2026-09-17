@@ -1,0 +1,852 @@
+.matrixTable {
+  display: grid;
+  gap: 10px;
+}
+
+.matrixHead,
+.matrixRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.matrixHead {
+  color: #8ea1b4;
+  font-size: 12px;
+  font-weight: 1000;
+  text-transform: uppercase;
+  padding: 0 4px 8px;
+}
+
+.matrixRow {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-left: 4px solid #ffd000;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.matrixRow strong {
+  color: #fff;
+  font-size: 17px;
+}
+
+.matrixRow span {
+  color: #94a5b7;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.matrixRow b {
+  color: #ffd000;
+  font-size: 22px;
+  font-weight: 1000;
+}
+
+.moneyInput {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  color: #ffd000 !important;
+  font-size: 18px !important;
+  font-weight: 1000 !important;
+  margin: 0 !important;
+}
+
+.moneyInput input {
+  margin: 0 !important;
+  height: 44px;
+}
+
+.adminInfoBox {
+  margin-top: 22px;
+  background: #fff3c4;
+  color: #111;
+  border: 1px solid #f0d36b;
+  border-radius: 14px;
+  padding: 18px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+/* WORKSHOP DIARY */
+.workshopDiaryPage {
+  display: grid;
+  gap: 20px;
+}
+
+.diaryStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.diaryStat {
+  background: linear-gradient(180deg, #121c26 0%, #0b1118 100%);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 20px;
+  border-bottom: 4px solid #ffd000;
+}
+
+.diaryStat.blue { border-bottom-color: #2d8cff; }
+.diaryStat.green { border-bottom-color: #2ee84d; }
+.diaryStat.purple { border-bottom-color: #b05cff; }
+
+.diaryStat span {
+  display: block;
+  color: #9aa7b4;
+  font-size: 12px;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.diaryStat strong {
+  display: block;
+  color: #fff;
+  font-size: 42px;
+  margin-top: 8px;
+  line-height: 1;
+}
+
+.diaryStat small {
+  display: block;
+  color: #ffd000;
+  margin-top: 8px;
+  font-weight: 900;
+}
+
+.closedDayBanner,
+.diarySettingsPanel {
+  background: rgba(255, 208, 0, 0.09);
+  border: 1px solid rgba(255, 208, 0, 0.28);
+  border-radius: 16px;
+  padding: 18px;
+  color: #fff;
+}
+
+.closedDayBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.closedDayBanner button,
+.diarySettingsActions button,
+.blockForm button {
+  background: #ffd000;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+.diarySettingsPanel {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.diarySettingsPanel h3 {
+  margin: 0 0 6px;
+  color: #fff;
+}
+
+.diarySettingsPanel p {
+  margin: 0;
+  color: #aab3bd;
+  font-weight: 700;
+}
+
+.diarySettingsActions {
+  display: flex;
+  gap: 10px;
+}
+
+.diaryMainGrid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.65fr;
+  gap: 18px;
+}
+
+.bottomGrid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.motSlotsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.motSlotCard {
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 14px;
+  min-height: 120px;
+}
+
+.motSlotCard.booked {
+  border-left: 4px solid #ffd000;
+}
+
+.motSlotCard.blocked {
+  border-left: 4px solid #ff4d4d;
+  opacity: 0.85;
+}
+
+.motSlotTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.motSlotTop strong {
+  color: #ffd000;
+  font-size: 18px;
+}
+
+.motSlotTop span {
+  color: #9aa7b4;
+  font-size: 11px;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.motSlotCard b {
+  display: inline-block;
+  background: #ffd000;
+  color: #000;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.motSlotCard small,
+.motSlotCard em,
+.motSlotCard p {
+  display: block;
+  margin-top: 8px;
+  color: #dce3ea;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.blockForm {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.blockForm input {
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: #080d13;
+  color: #fff;
+  padding: 0 12px;
+  font-weight: 800;
+}
+
+.blockedSlot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.blockedSlot strong {
+  color: #fff;
+}
+
+.blockedSlot .danger {
+  background: #ff4d4d;
+  color: #fff;
+}
+
+.diaryBookingList {
+  display: grid;
+  gap: 12px;
+}
+
+.diaryBookingCard {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-left: 4px solid #ffd000;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.diaryTime {
+  color: #ffd000;
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.diaryInfo strong {
+  display: inline-block;
+  background: #ffd000;
+  color: #000;
+  border-radius: 6px;
+  padding: 5px 8px;
+  letter-spacing: 1px;
+}
+
+.diaryInfo span,
+.diaryInfo small {
+  display: block;
+  color: #dce3ea;
+  margin-top: 5px;
+  font-weight: 800;
+}
+
+.diaryPrice {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 1000;
+}
+
+@media (max-width: 1100px) {
+  .diaryStatsGrid,
+  .diaryMainGrid,
+  .bottomGrid,
+  .diarySettingsPanel {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .motSlotsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.adminPage {
+  display: grid;
+  gap: 22px;
+}
+
+.adminHero,
+.adminPanel,
+.adminStat {
+  background: linear-gradient(180deg, #121c26, #0b1118);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.adminHero span,
+.adminStat span {
+  color: #ffd000;
+  font-weight: 1000;
+  letter-spacing: 1px;
+}
+
+.adminHero h2 {
+  margin: 8px 0;
+  color: #fff;
+  font-size: 48px;
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.adminHero p,
+.adminEmpty {
+  color: #aab3bd;
+  font-weight: 700;
+}
+
+.adminStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.adminStat strong {
+  display: block;
+  margin-top: 10px;
+  color: #fff;
+  font-size: 36px;
+}
+
+.adminGrid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.adminList {
+  display: grid;
+  gap: 12px;
+}
+
+.adminCard {
+  text-align: left;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-left: 4px solid #ffd000;
+  border-radius: 14px;
+  padding: 16px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.adminCard.active {
+  background: rgba(255,208,0,0.12);
+  border-color: #ffd000;
+}
+
+.adminReg {
+  display: inline-block;
+  background: #ffd000;
+  color: #000;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 20px;
+  font-weight: 1000;
+  letter-spacing: 2px;
+}
+
+.adminCard h4 {
+  margin: 12px 0 6px;
+  color: #fff;
+}
+
+.adminCard p {
+  margin: 4px 0;
+  color: #aab3bd;
+}
+
+.adminPrice {
+  color: #ffd000;
+  font-size: 24px;
+  font-weight: 1000;
+  margin-top: 10px;
+}
+
+.adminEditor {
+  display: grid;
+  gap: 18px;
+}
+
+.adminEditHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.adminFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.adminEditor label {
+  color: #fff;
+  font-weight: 900;
+  display: grid;
+  gap: 7px;
+}
+
+.adminEditor input,
+.adminEditor select,
+.adminEditor textarea,
+.adminSearch {
+  width: 100%;
+  background: #080d13;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.adminEditor textarea {
+  min-height: 90px;
+}
+
+.adminItemsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.adminItemsHeader button,
+.adminEditor button {
+  background: #ffd000;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+.adminItemEditor {
+  display: block;
+  background: rgba(255,255,255,0.05);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.adminItemEditor img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 10px;
+}
+
+.adminItemInputs {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+}
+
+.adminItemInputs input,
+.adminItemInputs select {
+  min-width: 0;
+  height: 44px;
+}
+
+.adminItemInputs button {
+  height: 44px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1000px) {
+  .adminGrid,
+  .adminStats,
+  .adminFormGrid,
+  .adminItemInputs {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .motSlotsGrid,
+  .diaryBookingCard {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 900px) {
+  .matrixHead {
+    display: none;
+  }
+
+  .matrixRow {
+    grid-template-columns: 1fr;
+  }
+
+  .motMatrixTable .matrixHead,
+  .motMatrixTable .matrixRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* CLEAN JOB BOARD ITEM EDITOR */
+.adminItemEditor {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 14px !important;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 14px !important;
+  padding: 16px !important;
+  margin-bottom: 14px !important;
+}
+
+.adminItemEditor img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 10px;
+}
+
+.adminItemInputs {
+  display: grid !important;
+  grid-template-columns: 2fr 1fr 150px !important;
+  gap: 12px !important;
+  align-items: center !important;
+}
+
+.adminItemInputs input,
+.adminItemInputs select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 50px !important;
+  background: #080d13 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  border-radius: 10px !important;
+  padding: 0 14px !important;
+  font-weight: 800 !important;
+}
+
+.adminItemTotals {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+  padding-top: 2px !important;
+}
+
+.adminItemTotals strong {
+  color: #ffd000 !important;
+  font-size: 22px !important;
+  font-weight: 1000 !important;
+}
+
+.adminItemTotals small {
+  color: #fff !important;
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  border-radius: 999px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+.adminItemTotals button,
+.adminDanger {
+  background: #ffd000 !important;
+  color: #000 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 12px 18px !important;
+  font-weight: 1000 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+
+.adminButtonRow {
+  display: flex !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-top: 10px !important;
+}
+
+.adminButtonRow button,
+.adminBtn {
+  background: #ffd000 !important;
+  color: #000 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 13px 18px !important;
+  font-weight: 1000 !important;
+  cursor: pointer !important;
+}
+
+.adminButtonRow .danger,
+.adminBtn.danger {
+  background: #2b1111 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,77,77,0.5) !important;
+}
+
+@media (max-width: 1200px) {
+  .adminItemInputs {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .adminItemInputs {
+    grid-template-columns: 1fr !important;
+  }
+
+  .adminItemTotals {
+    align-items: stretch !important;
+  }
+
+  .adminItemTotals button {
+    width: 100% !important;
+  }
+}
+.page {
+  display: grid;
+  gap: 22px;
+}
+
+.pageTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  background: linear-gradient(180deg, #121c26, #0b1118);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.pageTitleRow h2 {
+  margin: 0 0 8px;
+  color: #fff;
+  font-size: 34px;
+  text-transform: uppercase;
+}
+
+.pageTitleRow p {
+  margin: 0;
+  color: #aab3bd;
+  font-weight: 700;
+}
+
+.searchInput {
+  width: 360px;
+  height: 48px;
+  background: #080d13;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 10px;
+  padding: 0 14px;
+  font-weight: 800;
+}
+
+.panel {
+  background: linear-gradient(180deg, #121c26, #0b1118);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 22px;
+}
+
+.tyreTable {
+  display: grid;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.tyreHead,
+.tyreRow {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1.2fr 0.6fr 0.6fr 0.8fr 0.7fr 0.8fr;
+  gap: 10px;
+  align-items: center;
+  min-width: 1000px;
+}
+
+.tyreHead {
+  color: #ffd000;
+  font-size: 12px;
+  font-weight: 1000;
+  text-transform: uppercase;
+  padding: 0 6px 8px;
+}
+
+.tyreRow {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-left: 4px solid #ffd000;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.tyreRow input {
+  height: 42px;
+  background: #080d13;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-weight: 800;
+  min-width: 0;
+}
+
+.tyreRow input:focus,
+.searchInput:focus {
+  outline: none;
+  border-color: #ffd000;
+  box-shadow: 0 0 0 3px rgba(255,208,0,0.16);
+}
+
+@media (max-width: 900px) {
+  .pageTitleRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
+}
+.formStack {
+  display: grid;
+  gap: 16px;
+}
+
+.formStack label {
+  display: grid;
+  gap: 7px;
+  color: #fff;
+  font-weight: 900;
+}
+
+.formStack input,
+.formStack textarea,
+.pageTitleRow select {
+  width: 100%;
+  background: #080d13;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 800;
+}
+
+.formStack textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.formStack button {
+  background: #ffd000;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+.serviceList {
+  display: grid;
+  gap: 12px;
+}
+
+.serviceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-left: 4px solid #ffd000;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.serviceRow span {
+  color: #fff;
+  font-weight: 900;
+}
+
+.serviceRow strong {
+  color: #ffd000;
+  font-weight: 1000;
+}

@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "tyremen-system"
+  },
+  "targets": {
+    "tyremen-system": {
+      "hosting": {
+        "admin": [
+          "tyremen-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

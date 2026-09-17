@@ -1,0 +1,510 @@
+.adminShell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  background: #06080b;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.adminSidebar {
+  background: linear-gradient(180deg, #050505, #090d12);
+  border-right: 1px solid rgba(255,255,255,0.12);
+  padding: 24px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.adminBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.adminBrandIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 6px solid #ffd000;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 1000;
+  color: #fff;
+}
+
+.adminBrand h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 1000;
+  font-style: italic;
+  letter-spacing: -1px;
+}
+
+.adminBrand p {
+  margin: 2px 0 0;
+  color: #ffd000;
+  font-size: 12px;
+  font-weight: 1000;
+  letter-spacing: 1px;
+}
+
+.adminNav {
+  display: grid;
+  gap: 10px;
+}
+
+.adminNav a {
+  color: #e5e5e5;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.adminNav a.active {
+  background: #ffd000;
+  color: #000;
+}
+
+.adminTodayBox {
+  margin-top: 34px;
+  background: rgba(13,20,28,0.9);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.adminTodayBox span {
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.adminTodayBox strong {
+  display: block;
+  color: #ffd000;
+  margin: 6px 0 16px;
+}
+
+.adminTodayBox p {
+  color: #d7d7d7;
+  font-size: 13px;
+}
+
+.adminTodayBox h3 {
+  margin: 20px 0 4px;
+  color: #fff;
+}
+
+.adminTodayBox small {
+  color: #aaa;
+}
+
+.adminMain {
+  min-width: 0;
+  padding: 22px;
+}
+
+.adminTopBar {
+  display: grid;
+  grid-template-columns: 1fr 340px auto;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.adminTopBar h1 {
+  margin: 0;
+  font-size: 30px;
+  text-transform: uppercase;
+}
+
+.adminTopBar p {
+  margin: 4px 0 0;
+  color: #aab3bd;
+}
+
+.adminSearch {
+  height: 48px;
+  background: #080d13;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+}
+
+.adminSearch input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 14px;
+}
+
+.adminUser {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adminLive {
+  background: #2ee84d;
+  color: #000;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.adminAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffd000;
+  color: #000;
+  display: grid;
+  place-items: center;
+  font-weight: 1000;
+}
+
+.adminUser small {
+  display: block;
+  color: #aaa;
+}
+
+@media (max-width: 900px) {
+  .adminShell {
+    grid-template-columns: 1fr;
+  }
+
+  .adminSidebar {
+    position: relative;
+    height: auto;
+  }
+
+  .adminTopBar {
+    grid-template-columns: 1fr;
+  }
+.dashPage {
+  display: grid;
+  gap: 22px;
+}
+
+.dashHero {
+  background:
+    radial-gradient(circle at top left, rgba(255,208,0,0.14), transparent 36%),
+    linear-gradient(135deg, #101820, #080c11);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashHero span {
+  color: #ffd000;
+  font-size: 12px;
+  font-weight: 1000;
+  letter-spacing: 2px;
+}
+
+.dashHero h2 {
+  margin: 8px 0;
+  color: #fff;
+  font-size: 52px;
+  line-height: 0.9;
+  font-style: italic;
+  text-transform: uppercase;
+}
+
+.dashHero p {
+  margin: 0;
+  color: #aab3bd;
+  font-weight: 700;
+}
+
+.dashHero select {
+  height: 48px;
+  background: #080d13;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 10px;
+  padding: 0 16px;
+  font-weight: 900;
+}
+
+.dashStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.dashStatCard {
+  background: linear-gradient(180deg, #101820, #080c11);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashStatCard::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 0;
+  height: 4px;
+  background: #ffd000;
+}
+
+.dashStatCard.blue::after {
+  background: #2d8cff;
+}
+
+.dashStatCard.green::after {
+  background: #2ee84d;
+}
+
+.dashStatCard.purple::after {
+  background: #a855f7;
+}
+
+.dashStatCard span {
+  display: block;
+  color: #aab3bd;
+  font-size: 13px;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.dashStatCard strong {
+  display: block;
+  margin-top: 10px;
+  color: #fff;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 1000;
+}
+
+.dashStatCard small {
+  display: block;
+  margin-top: 8px;
+  color: #ffd000;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.dashMainGrid {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 22px;
+}
+
+.dashPanel {
+  background: linear-gradient(180deg, #101820, #080c11);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 22px;
+}
+
+.dashPanelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.dashPanelHead h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 22px;
+  text-transform: uppercase;
+}
+
+.dashPanelHead span {
+  background: #ffd000;
+  color: #000;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.dashEmpty {
+  color: #aab3bd;
+  font-weight: 800;
+}
+
+.dashServiceList,
+.dashBookingList {
+  display: grid;
+  gap: 12px;
+}
+
+.dashServiceRow {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-left: 4px solid #ffd000;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashServiceRow strong {
+  color: #fff;
+}
+
+.dashServiceRow small {
+  display: block;
+  margin-top: 4px;
+  color: #aab3bd;
+}
+
+.dashServiceRow b {
+  color: #ffd000;
+  font-size: 34px;
+}
+
+.dashBookingCard {
+  background: linear-gradient(180deg, #141d26, #0b1118);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 16px;
+  border-left: 4px solid #ffd000;
+}
+
+.dashBookingTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashRegPlate {
+  background: #ffd000;
+  color: #000;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 22px;
+  font-weight: 1000;
+  letter-spacing: 2px;
+}
+
+.dashBookingCard h4 {
+  margin: 14px 0 4px;
+  color: #fff;
+  font-size: 22px;
+}
+
+.dashBookingCard p {
+  margin: 0;
+  color: #aab3bd;
+  font-weight: 800;
+}
+
+.dashTyreBox,
+.dashStockBox {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.dashTyreBox small,
+.dashStockBox span {
+  background: rgba(255,255,255,0.06);
+  color: #d7d7d7;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dashBookingFooter {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashBookingFooter span {
+  color: #ffd000;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.dashBookingFooter b {
+  color: #fff;
+  font-size: 22px;
+}
+
+.dashBoardPreview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.dashMiniColumn {
+  background: linear-gradient(180deg, #101820, #080c11);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-top: 4px solid #ffd000;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.dashMiniColumn.blue {
+  border-top-color: #2d8cff;
+}
+
+.dashMiniColumn.green {
+  border-top-color: #2ee84d;
+}
+
+.dashMiniColumn h3 {
+  margin: 0 0 14px;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.dashMiniJob {
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.dashMiniJob strong {
+  display: block;
+  color: #ffd000;
+  font-size: 18px;
+}
+
+.dashMiniJob span {
+  color: #d7d7d7;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (max-width: 1000px) {
+  .dashStatsGrid,
+  .dashMainGrid,
+  .dashBoardPreview {
+    grid-template-columns: 1fr;
+  }
+
+  .dashHero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+}
+}
