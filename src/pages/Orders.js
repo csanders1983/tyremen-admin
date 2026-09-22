@@ -178,11 +178,15 @@ useEffect(() => {
       acceptedAt: new Date().toISOString(),
     });
 
+    const arrivalTime = selected.arrivalTime || selected.schedule?.arrivalTime || selected.time || "";
+    const serviceTime = selected.schedule?.serviceTime || "";
     const message = `${selected.name || ""} - ${selected.registration || ""} - ${
       selected.service || ""
     } booked for ${selected.date || ""} - Time ${
       selected.time || ""
-    }. Drop off time from 8:30am. Please arrive 15 minutes before appointment.`;
+    }.${arrivalTime && arrivalTime !== selected.time ? ` Please have the vehicle here for ${arrivalTime}.` : ""}${
+      serviceTime ? ` Service is scheduled for ${serviceTime}, subject to the MOT result.` : ""
+    }`;
 
     alert(`Pre-filled email text:\n\n${message}`);
   };
@@ -366,7 +370,8 @@ Total: £${calculatedTotal.toFixed(2)}
                   <input
                     type="date"
                     value={selected.date || ""}
-                    onChange={(e) => updateField("date", e.target.value)}
+                    readOnly
+                    title="Cancel and rebook in Workshop Diary so capacity is checked"
                   />
                 </label>
 
@@ -374,7 +379,8 @@ Total: £${calculatedTotal.toFixed(2)}
                   Time
                   <input
                     value={selected.time || ""}
-                    onChange={(e) => updateField("time", e.target.value)}
+                    readOnly
+                    title="Cancel and rebook in Workshop Diary so capacity is checked"
                   />
                 </label>
 

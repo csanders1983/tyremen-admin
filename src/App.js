@@ -7,6 +7,8 @@ import Tyres from "./pages/Tyres";
 import Services from "./pages/Services";
 import PagesEditor from "./pages/PagesEditor";
 import Settings from "./pages/Settings";
+import VctCommerce from "./pages/VctCommerce";
+import PricingControl from "./pages/PricingControl";
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
           <Route path="services" element={<Services />} />
           <Route path="pages" element={<PagesEditor />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="pricing-control" element={<PricingControl />} />
+          <Route path="very-cheap-tyres" element={<VctCommerce />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

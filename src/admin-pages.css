@@ -321,6 +321,127 @@
   font-weight: 1000;
 }
 
+.diaryPanelTitle {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.diaryPanelTitle h3 { margin: 0 0 5px; color: #fff; }
+.diaryPanelTitle p,
+.panelIntro { margin: 0 0 14px; color: #95a2ae; font-weight: 700; }
+.diaryLegend { display: flex; gap: 8px; }
+.diaryLegend span { padding: 6px 9px; border-radius: 6px; color: #061018; font-size: 10px; font-weight: 1000; text-transform: uppercase; }
+.diaryLegend .available { background: #37dd78; }
+.diaryLegend .booked { background: #ffd000; }
+
+.diarySchedule {
+  display: grid;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.diaryScheduleHead,
+.diaryScheduleRow {
+  display: grid;
+  grid-template-columns: 70px repeat(4, minmax(160px, 1fr));
+  gap: 8px;
+  min-width: 850px;
+}
+
+.diaryScheduleHead span {
+  padding: 8px;
+  color: #8ea1b4;
+  font-size: 10px;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.diaryScheduleRow > strong {
+  display: grid;
+  place-items: center;
+  color: #ffd000;
+  font-size: 18px;
+}
+
+.diaryLaneCell {
+  min-height: 90px;
+  padding: 11px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  background: rgba(255,255,255,.035);
+}
+
+.diaryLaneCell.available { border-left: 4px solid #37dd78; }
+.diaryLaneCell.booked { border-left: 4px solid #ffd000; background: rgba(255,208,0,.08); }
+.diaryLaneCell.blocked { border-left: 4px solid #ff5656; opacity: .72; }
+.diaryLaneCell > span { display: block; color: #7f8c98; font-size: 9px; font-weight: 1000; text-transform: uppercase; }
+.diaryLaneCell > b { display: inline-block; margin-top: 7px; padding: 4px 7px; border-radius: 4px; background: #ffd000; color: #000; letter-spacing: 1px; }
+.diaryLaneCell > small,
+.diaryLaneCell > em,
+.diaryLaneCell > p { display: block; margin: 5px 0 0; color: #cdd5dc; font-size: 11px; font-style: normal; font-weight: 800; }
+
+.dailyCapacityGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.dailyCapacityCard {
+  padding: 17px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-bottom: 4px solid #37dd78;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #121c26, #0b1118);
+}
+.dailyCapacityCard.full { border-bottom-color: #ff5656; }
+.dailyCapacityCard span,
+.dailyCapacityCard small { display: block; color: #9aa7b4; font-size: 10px; font-weight: 1000; text-transform: uppercase; }
+.dailyCapacityCard strong { display: block; margin: 8px 0; color: #fff; font-size: 28px; }
+.dailyCapacityCard small { color: #37dd78; }
+.dailyCapacityCard.full small { color: #ff7272; }
+
+.manualBookingForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.manualBookingForm label {
+  display: grid;
+  gap: 6px;
+  color: #9aa7b4;
+  font-size: 11px;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+.manualBookingForm input,
+.manualBookingForm select,
+.blockForm select {
+  height: 45px;
+  box-sizing: border-box;
+  padding: 0 11px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 9px;
+  background: #080d13;
+  color: #fff;
+  font-weight: 800;
+}
+.manualBookingForm .adminRegInput { background: #ffd000; color: #000; font-weight: 1000; letter-spacing: 1px; }
+.adminPrimaryButton {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 15px;
+  border: 0;
+  border-radius: 9px;
+  background: #ffd000;
+  color: #000;
+  font-weight: 1000;
+  cursor: pointer;
+}
+.adminPrimaryButton:disabled { opacity: .45; cursor: not-allowed; }
+
 @media (max-width: 1100px) {
   .diaryStatsGrid,
   .diaryMainGrid,
@@ -333,6 +454,15 @@
   .motSlotsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .dailyCapacityGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 680px) {
+  .dailyCapacityGrid,
+  .manualBookingForm { grid-template-columns: 1fr; }
+  .diaryPanelTitle { display: block; }
+  .diaryLegend { margin-top: 12px; }
 }
 
 .adminPage {
@@ -850,3 +980,23 @@
   color: #ffd000;
   font-weight: 1000;
 }
+
+/* VERY CHEAP TYRES E-COMMERCE */
+.vctHero { border-left-color: #e84a27; }
+.vctHero > span { color: #ff6845; }
+.adminNav a.vctNav { margin-top: 12px; border: 1px solid rgba(232,74,39,.65); }
+.adminNav a.vctNav.active { background: #e84a27; color: #fff; }
+.vctTabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+.vctTabs button { border:1px solid rgba(255,255,255,.16); color:#ddd; background:#0b1118; border-radius:9px; padding:11px 14px; font-weight:900; cursor:pointer; }
+.vctTabs button.active { background:#e84a27; color:#fff; border-color:#e84a27; }
+.vctFlow { display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:15px; align-items:center; margin-top:25px; }
+.vctFlow div { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:22px; }
+.vctFlow b,.vctFlow span { display:block; }.vctFlow span { color:#9aa7b4; margin-top:8px; }.vctFlow i { color:#e84a27; font-size:28px; font-style:normal; }
+.vctForm { display:grid; gap:16px; max-width:1000px; }
+.vctForm label { display:grid; gap:7px; color:#fff; font-weight:900; }
+.vctForm input,.vctForm select,.vctForm textarea,.vctOrderList select { background:#080d13; border:1px solid rgba(255,255,255,.16); color:#fff; border-radius:9px; padding:12px; }
+.vctForm textarea { min-height:90px; }.vctForm button { justify-self:start; background:#e84a27; color:#fff; border:0; border-radius:8px; padding:13px 17px; font-weight:1000; cursor:pointer; }
+.vctForm .toggleField { display:flex; align-items:center; gap:10px; }.vctForm .toggleField input { width:20px; height:20px; }
+.vctOrderList { display:grid; gap:10px; margin-top:20px; }.vctOrderList article { display:grid; grid-template-columns:1fr 120px 190px; gap:16px; align-items:center; background:rgba(255,255,255,.045); border-left:4px solid #e84a27; border-radius:10px; padding:15px; }.vctOrderList h4 { color:#fff; margin:5px 0; }.vctOrderList p,.vctOrderList small { color:#9aa7b4; margin:0; }.vctOrderList>article>strong { color:#ff6845; font-size:23px; }
+.vctImport { border:2px dashed rgba(232,74,39,.65); padding:30px; text-align:center; cursor:pointer; }.vctImport input { margin-top:12px; }
+@media(max-width:800px){.vctFlow{grid-template-columns:1fr}.vctFlow i{transform:rotate(90deg);justify-self:center}.vctOrderList article{grid-template-columns:1fr}.vctForm .adminFormGrid{grid-template-columns:1fr}}

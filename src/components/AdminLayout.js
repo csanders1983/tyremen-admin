@@ -19,8 +19,10 @@ export default function AdminLayout() {
           <NavLink to="/calendar">Calendar</NavLink>
           <NavLink to="/tyres">Tyre Stock</NavLink>
           <NavLink to="/services">Service Prices</NavLink>
+          <NavLink to="/pricing-control">Price Control</NavLink>
           <NavLink to="/pages">Page Editor</NavLink>
           <NavLink to="/settings">Settings</NavLink>
+          <NavLink className="vctNav" to="/very-cheap-tyres">Very Cheap Tyres</NavLink>
         </nav>
 
         <div className="adminTodayBox">
