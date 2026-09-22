@@ -1,6 +1,8 @@
 import { Outlet, NavLink } from "react-router-dom";
+import { ROLE_LABELS, useAuth } from "../auth/AuthContext";
 
 export default function AdminLayout() {
+  const { profile, role, can, signOut } = useAuth();
   return (
     <div className="adminShell">
       <aside className="adminSidebar">
@@ -15,14 +17,16 @@ export default function AdminLayout() {
 
         <nav className="adminNav">
           <NavLink to="/">Dashboard</NavLink>
-          <NavLink to="/orders">Jobs Board</NavLink>
-          <NavLink to="/calendar">Calendar</NavLink>
-          <NavLink to="/tyres">Tyre Stock</NavLink>
-          <NavLink to="/services">Service Prices</NavLink>
-          <NavLink to="/pricing-control">Price Control</NavLink>
-          <NavLink to="/pages">Page Editor</NavLink>
-          <NavLink to="/settings">Settings</NavLink>
-          <NavLink className="vctNav" to="/very-cheap-tyres">Very Cheap Tyres</NavLink>
+          {can("jobs") && <NavLink to="/orders">Jobs Board</NavLink>}
+          {can("calendar") && <NavLink to="/calendar">Calendar</NavLink>}
+          {can("sales") && <NavLink to="/sales">Sales &amp; Invoices</NavLink>}
+          {can("stock") && <NavLink to="/tyres">Tyre Stock</NavLink>}
+          {can("services") && <NavLink to="/services">Service Prices</NavLink>}
+          {can("pricing") && <NavLink to="/pricing-control">Price Control</NavLink>}
+          {can("pages") && <NavLink to="/pages">Page Editor</NavLink>}
+          {can("settings") && <NavLink to="/settings">Settings</NavLink>}
+          {can("users") && <NavLink to="/users">Staff Users</NavLink>}
+          {can("vct") && <NavLink className="vctNav" to="/very-cheap-tyres">Very Cheap Tyres</NavLink>}
         </nav>
 
         <div className="adminTodayBox">
@@ -52,11 +56,12 @@ export default function AdminLayout() {
 
           <div className="adminUser">
             <span className="adminLive">LIVE</span>
-            <div className="adminAvatar">N</div>
+            <div className="adminAvatar">{String(profile?.name || "T").charAt(0).toUpperCase()}</div>
             <div>
-              <strong>Nigel</strong>
-              <small>Admin</small>
+              <strong>{profile?.name || "Tyremen staff"}</strong>
+              <small>{ROLE_LABELS[role] || role}</small>
             </div>
+            <button className="adminSignOut" type="button" onClick={signOut}>Sign out</button>
           </div>
         </header>
 
