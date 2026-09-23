@@ -54,7 +54,7 @@ export default function Sales() {
     if (!vrm) return setMessage("Enter a registration first.");
     setBusy("vehicle"); setMessage("");
     try {
-      const response = await fetch(`${FUNCTIONS_ROOT}/vehicleLookup?vrm=${encodeURIComponent(vrm)}`);
+      const response = await fetch(`${FUNCTIONS_ROOT}/vehicleLookupV2?vrm=${encodeURIComponent(vrm)}`);
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || "Vehicle lookup failed");
       const vehicle = data.vehicle || {};

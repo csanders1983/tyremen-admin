@@ -13,7 +13,7 @@ import {
 import { db } from "../firebase";
 
 const CREATE_BOOKING_URL =
-  "https://us-central1-tyremen-system.cloudfunctions.net/createWorkshopBooking";
+  "https://us-central1-tyremen-system.cloudfunctions.net/createWorkshopBookingV2";
 const HOURS = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
 const JOB_TYPES = [
   ["mot", "MOT"],
