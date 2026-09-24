@@ -21,8 +21,7 @@ export default function AdminLayout() {
           {can("calendar") && <NavLink to="/calendar">Calendar</NavLink>}
           {can("sales") && <NavLink to="/sales">Sales &amp; Invoices</NavLink>}
           {can("stock") && <NavLink to="/tyres">Tyre Stock</NavLink>}
-          {can("services") && <NavLink to="/services">Service Prices</NavLink>}
-          {can("pricing") && <NavLink to="/pricing-control">Price Control</NavLink>}
+          {can("pricing") && <NavLink to="/pricing-control">Pricing &amp; Offers</NavLink>}
           {can("pages") && <NavLink to="/pages">Page Editor</NavLink>}
           {can("settings") && <NavLink to="/settings">Settings</NavLink>}
           {can("users") && <NavLink to="/users">Staff Users</NavLink>}

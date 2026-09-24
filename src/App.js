@@ -4,7 +4,6 @@ import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
 import Calendar from "./pages/Calendar";
 import Tyres from "./pages/Tyres";
-import Services from "./pages/Services";
 import PagesEditor from "./pages/PagesEditor";
 import Settings from "./pages/Settings";
 import VctCommerce from "./pages/VctCommerce";
@@ -26,7 +25,7 @@ export default function App() {
           <Route path="orders" element={<RequireAuth permission="jobs"><Orders /></RequireAuth>} />
           <Route path="calendar" element={<RequireAuth permission="calendar"><Calendar /></RequireAuth>} />
           <Route path="tyres" element={<RequireAuth permission="stock"><Tyres /></RequireAuth>} />
-          <Route path="services" element={<RequireAuth permission="services"><Services /></RequireAuth>} />
+          <Route path="services" element={<Navigate to="/pricing-control" replace />} />
           <Route path="sales" element={<RequireAuth permission="sales"><Sales /></RequireAuth>} />
           <Route path="pages" element={<RequireAuth permission="pages"><PagesEditor /></RequireAuth>} />
           <Route path="settings" element={<RequireAuth permission="settings"><Settings /></RequireAuth>} />

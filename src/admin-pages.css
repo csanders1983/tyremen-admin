@@ -71,6 +71,91 @@
   line-height: 1.5;
 }
 
+.jobMessage {
+  margin-top: 0;
+}
+
+.completeInvoiceButton {
+  background: #32dc75 !important;
+  color: #041108 !important;
+  border-color: #32dc75 !important;
+}
+
+.invoiceLinkButton {
+  margin-top: 10px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 208, 0, .45);
+  border-radius: 8px;
+  background: rgba(255, 208, 0, .1);
+  color: #ffd000;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+/* CENTRAL PRICING */
+.pricingControlPage { align-items: start; }
+.pricingControlGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.pricingPreviewGrid { grid-template-columns: 1.4fr .6fr; }
+.pricingEditor { display: grid; gap: 15px; }
+.pricingEditor h3 { margin: 0; color: #fff; }
+.pricingEditor p { margin: 0; color: #97a5b3; font-weight: 700; }
+.pricingEditor label { display: grid; gap: 7px; color: #dce3ea; font-size: 12px; font-weight: 900; }
+.pricingEditor input,
+.pricingEditor select {
+  width: 100%; min-height: 44px; box-sizing: border-box; padding: 0 11px;
+  border: 1px solid rgba(255,255,255,.14); border-radius: 9px;
+  background: #080d13; color: #fff; font-weight: 800;
+}
+.pricingFields { display: grid; grid-template-columns: repeat(3, minmax(130px, 1fr)); gap: 12px; }
+.pricingPublishBar {
+  position: sticky; top: 10px; z-index: 4; display: flex; justify-content: space-between;
+  align-items: center; gap: 15px; padding: 17px 20px; border: 1px solid rgba(55,221,120,.35);
+  border-radius: 14px; background: rgba(8,18,13,.97); box-shadow: 0 12px 35px rgba(0,0,0,.32);
+}
+.pricingPublishBar.dirty { border-color: rgba(255,208,0,.7); background: rgba(28,23,4,.98); }
+.pricingPublishBar strong,
+.pricingPublishBar span { display: block; color: #fff; }
+.pricingPublishBar span { margin-top: 4px; color: #aab3bd; font-size: 12px; }
+.pricingPublishBar button,
+.overrideEntry button,
+.formulaImportButton { border: 0; border-radius: 9px; background: #ffd000; color: #000; padding: 12px 15px; font-weight: 1000; cursor: pointer; }
+.pricingPublishBar button:disabled { opacity: .42; cursor: not-allowed; }
+.pricePreviewTotals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+.pricePreviewTotals > div { padding: 13px; border-radius: 10px; background: rgba(255,255,255,.05); }
+.pricePreviewTotals span { display: block; color: #91a0ae; font-size: 10px; font-weight: 1000; text-transform: uppercase; }
+.pricePreviewTotals strong { display: block; margin-top: 7px; color: #fff; font-size: 21px; }
+.pricePreviewTotals .grand { background: #ffd000; }
+.pricePreviewTotals .grand span,
+.pricePreviewTotals .grand strong { color: #000; }
+.overrideNotice { color: #37dd78 !important; }
+.centralServiceMatrix { display: grid; gap: 8px; overflow-x: auto; }
+.centralServiceHead,
+.centralServiceRow { display: grid; grid-template-columns: 150px repeat(4, minmax(130px, 1fr)); gap: 9px; align-items: center; min-width: 760px; }
+.centralServiceHead { color: #8998a6; font-size: 10px; font-weight: 1000; text-transform: uppercase; padding: 0 8px; }
+.centralServiceRow { padding: 10px; border: 1px solid rgba(255,255,255,.1); border-left: 4px solid #ffd000; border-radius: 10px; background: rgba(255,255,255,.035); }
+.centralServiceRow strong { color: #fff; }
+.centralServiceRow label { display: flex; align-items: center; color: #ffd000; font-size: 17px; }
+.centralServiceRow input { min-width: 0; }
+.markupBands { display: grid; gap: 9px; }
+.markupRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; border-radius: 10px; background: rgba(255,255,255,.04); }
+.formulaImportButton { display: inline-grid !important; width: auto; }
+.formulaImportButton input { display: none; }
+.overrideEntry { display: grid; grid-template-columns: 1fr 1.4fr .7fr auto; gap: 8px; }
+.overrideList { display: grid; gap: 8px; }
+.overrideList > div { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 11px; border-radius: 9px; background: rgba(255,255,255,.045); }
+.overrideList span b,
+.overrideList span small { display: block; color: #fff; }
+.overrideList span small { color: #9eabb7; margin-top: 3px; }
+.overrideList > div > strong { color: #ffd000; }
+.overrideList button { border: 0; border-radius: 7px; background: #ff5757; color: #fff; padding: 8px; font-weight: 900; cursor: pointer; }
+.toggleField { display: flex !important; grid-template-columns: auto 1fr; align-items: center; }
+.toggleField input { width: 20px; min-height: 20px; }
+.pricingHistoryList { display: grid; gap: 8px; }
+.pricingHistoryList > div { display: flex; justify-content: space-between; gap: 15px; padding: 12px; border-radius: 9px; background: rgba(255,255,255,.04); color: #dce3ea; }
+.pricingHistoryList b,
+.pricingHistoryList small { display: block; }
+.pricingHistoryList small { color: #91a0ae; margin-top: 4px; }
+
 /* WORKSHOP DIARY */
 .workshopDiaryPage {
   display: grid;
@@ -429,6 +514,29 @@
   font-weight: 800;
 }
 .manualBookingForm .adminRegInput { background: #ffd000; color: #000; font-weight: 1000; letter-spacing: 1px; }
+.capacityInputGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+}
+.capacityInputGrid label {
+  display: grid;
+  gap: 7px;
+  color: #aab3bd;
+  font-size: 11px;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+.capacityInputGrid input {
+  height: 45px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 9px;
+  background: #080d13;
+  color: #fff;
+  padding: 0 11px;
+  font-weight: 900;
+}
 .adminPrimaryButton {
   width: 100%;
   min-height: 48px;
@@ -456,13 +564,25 @@
   }
 
   .dailyCapacityGrid { grid-template-columns: repeat(2, 1fr); }
+  .capacityInputGrid { grid-template-columns: repeat(2, 1fr); }
+  .pricingControlGrid,
+  .pricingPreviewGrid { grid-template-columns: 1fr; }
+  .pricePreviewTotals { grid-template-columns: repeat(2, 1fr); }
+  .overrideEntry { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 680px) {
   .dailyCapacityGrid,
-  .manualBookingForm { grid-template-columns: 1fr; }
+  .manualBookingForm,
+  .capacityInputGrid { grid-template-columns: 1fr; }
   .diaryPanelTitle { display: block; }
   .diaryLegend { margin-top: 12px; }
+  .pricingPublishBar { position: static; display: grid; }
+  .pricingFields,
+  .pricePreviewTotals,
+  .markupRow,
+  .overrideEntry { grid-template-columns: 1fr; }
+  .pricingHistoryList > div { display: grid; }
 }
 
 .adminPage {

@@ -5,6 +5,7 @@ import { db, auth } from "../firebase";
 import { useAuth } from "../auth/AuthContext";
 import { calculateInvoice, money } from "../lib/invoiceMath";
 import { buildInvoiceHtml } from "../lib/invoiceTemplate";
+import { useSearchParams } from "react-router-dom";
 
 const FUNCTIONS_ROOT = "https://us-central1-tyremen-system.cloudfunctions.net";
 const blankItem = () => ({ type: "service", description: "", stockNumber: "", quantity: 1, unitPriceIncVat: 0, discountIncVat: 0, vatRate: 20, costExVat: 0 });
@@ -21,6 +22,7 @@ const blankSale = () => ({
 });
 
 export default function Sales() {
+  const [searchParams] = useSearchParams();
   const { profile, can } = useAuth();
   const [tab, setTab] = useState("new");
   const [draft, setDraft] = useState(blankSale);
@@ -35,6 +37,16 @@ export default function Sales() {
     const q = query(collection(db, "invoices"), orderBy("createdAt", "desc"));
     return onSnapshot(q, (snapshot) => setInvoices(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }))));
   }, []);
+
+  useEffect(() => {
+    const invoiceId = searchParams.get("invoice");
+    if (!invoiceId || !invoices.length) return;
+    const invoice = invoices.find((entry) => entry.id === invoiceId);
+    if (invoice) {
+      setSelected(invoice);
+      setTab("invoices");
+    }
+  }, [invoices, searchParams]);
 
   const totals = useMemo(() => calculateInvoice(draft.items), [draft.items]);
   const filtered = useMemo(() => {

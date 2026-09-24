@@ -10,10 +10,12 @@ import {
   orderBy,
   setDoc,
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
+import { useAuth } from "../auth/AuthContext";
 
 const CREATE_BOOKING_URL =
   "https://us-central1-tyremen-system.cloudfunctions.net/createWorkshopBookingV2";
+const FUNCTIONS_ROOT = "https://us-central1-tyremen-system.cloudfunctions.net";
 const HOURS = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
 const JOB_TYPES = [
   ["mot", "MOT"],
@@ -34,6 +36,7 @@ const DAILY_CAPACITY = {
   airconR1234yf: 8,
   brakes: 6,
 };
+const DEFAULT_CAPACITY = { motPerHour: 2, servicePerHour: 2, ...DAILY_CAPACITY };
 
 const textFor = (value) =>
   [value?.name, value?.service, value?.category, value?.serviceKey, value?.type, value?.gasType]
@@ -102,6 +105,7 @@ function JobCell({ job, label }) {
 }
 
 export default function Calendar() {
+  const { can } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [closedDays, setClosedDays] = useState([]);
@@ -113,6 +117,8 @@ export default function Calendar() {
     name: "", phone: "", email: "", registration: "", jobType: "mot", time: "09:00", price: "",
   });
   const [savingManual, setSavingManual] = useState(false);
+  const [capacity, setCapacity] = useState(DEFAULT_CAPACITY);
+  const [capacityStatus, setCapacityStatus] = useState("");
 
   useEffect(() => {
     const jobsQuery = query(collection(db, "jobs"), orderBy("date", "asc"));
@@ -127,6 +133,10 @@ export default function Calendar() {
 
   useEffect(() => onSnapshot(collection(db, "closedDays"), (snapshot) => {
     setClosedDays(snapshot.docs.map((snap) => ({ id: snap.id, ...snap.data() })));
+  }), []);
+
+  useEffect(() => onSnapshot(doc(db, "workshopSettings", "capacity"), (snapshot) => {
+    if (snapshot.exists()) setCapacity({ ...DEFAULT_CAPACITY, ...snapshot.data() });
   }), []);
 
   const dayJobs = useMemo(
@@ -153,6 +163,24 @@ export default function Calendar() {
 
   const motBooked = jobsFor("mot").length;
   const serviceBooked = jobsFor("service").length;
+
+  const saveCapacity = async () => {
+    setCapacityStatus("Saving…");
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch(`${FUNCTIONS_ROOT}/updateWorkshopSettings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ capacity }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Capacity could not be saved");
+      setCapacity(data.capacity);
+      setCapacityStatus("Live");
+    } catch (error) {
+      setCapacityStatus(error.message || "Save failed");
+    }
+  };
 
   const blockSlot = async () => {
     if (!selectedDate || (!blockTime && ["mot", "service"].includes(blockResource))) {
@@ -240,8 +268,8 @@ export default function Calendar() {
       </div>
 
       <div className="diaryStatsGrid">
-        <div className="diaryStat yellow"><span>MOT booked</span><strong>{motBooked}</strong><small>of 16 weekday spaces</small></div>
-        <div className="diaryStat blue"><span>Service booked</span><strong>{serviceBooked}</strong><small>2 per hour</small></div>
+        <div className="diaryStat yellow"><span>MOT booked</span><strong>{motBooked}</strong><small>of {capacity.motPerHour * HOURS.length} weekday spaces</small></div>
+        <div className="diaryStat blue"><span>Service booked</span><strong>{serviceBooked}</strong><small>{capacity.servicePerHour} per hour</small></div>
         <div className="diaryStat green"><span>Total jobs</span><strong>{dayJobs.length}</strong><small>{selectedDate}</small></div>
         <div className="diaryStat purple"><span>Admin blocks</span><strong>{dayBlocks.length}</strong><small>All resources</small></div>
       </div>
@@ -255,21 +283,25 @@ export default function Calendar() {
 
       <div className="panel diaryPanelWide">
         <div className="diaryPanelTitle">
-          <div><h3>Hourly Workshop Capacity</h3><p>Two MOT bays and two servicing spaces every full hour.</p></div>
+          <div><h3>Hourly Workshop Capacity</h3><p>{capacity.motPerHour} MOT and {capacity.servicePerHour} servicing spaces every full hour.</p></div>
           <div className="diaryLegend"><span className="available">Available</span><span className="booked">Booked</span></div>
         </div>
         <div className="diarySchedule">
-          <div className="diaryScheduleHead"><span>Time</span><span>MOT Bay 1</span><span>MOT Bay 2</span><span>Service 1</span><span>Service 2</span></div>
+          <div className="diaryScheduleHead" style={{ gridTemplateColumns: `70px repeat(${capacity.motPerHour + capacity.servicePerHour}, minmax(160px, 1fr))` }}>
+            <span>Time</span>
+            {Array.from({ length: capacity.motPerHour }, (_, index) => <span key={`mh-${index}`}>MOT Bay {index + 1}</span>)}
+            {Array.from({ length: capacity.servicePerHour }, (_, index) => <span key={`sh-${index}`}>Service {index + 1}</span>)}
+          </div>
           {HOURS.map((hour) => {
             const mot = jobsFor("mot", hour);
             const service = jobsFor("service", hour);
             const motBlocks = blocksFor("mot", hour);
             const serviceBlocks = blocksFor("service", hour);
             const closed = Boolean(closedDay || isSunday);
-            const motCells = [0, 1].map((index) => closed || index < motBlocks ? { blocked: true } : mot[index]);
-            const serviceCells = [0, 1].map((index) => closed || index < serviceBlocks ? { blocked: true } : service[index]);
+            const motCells = Array.from({ length: capacity.motPerHour }, (_, index) => closed || index < motBlocks ? { blocked: true } : mot[index]);
+            const serviceCells = Array.from({ length: capacity.servicePerHour }, (_, index) => closed || index < serviceBlocks ? { blocked: true } : service[index]);
             return (
-              <div className="diaryScheduleRow" key={hour}>
+              <div className="diaryScheduleRow" key={hour} style={{ gridTemplateColumns: `70px repeat(${capacity.motPerHour + capacity.servicePerHour}, minmax(160px, 1fr))` }}>
                 <strong>{hour}</strong>
                 {motCells.map((job, index) => job?.blocked
                   ? <div className="diaryLaneCell blocked" key={`mot-${index}`}><span>MOT Bay {index + 1}</span><p>Blocked</p></div>
@@ -285,11 +317,11 @@ export default function Calendar() {
 
       <div className="dailyCapacityGrid">
         {[
-          ["timing", "Cambelts / Timing", 2],
-          ["clutch", "Clutches", 4],
-          ["airconR134a", "Air Con R134a", 8],
-          ["airconR1234yf", "Air Con R1234yf", 8],
-          ["brakes", "Brakes", 6],
+          ["timing", "Cambelts / Timing", capacity.timing],
+          ["clutch", "Clutches", capacity.clutch],
+          ["airconR134a", "Air Con R134a", capacity.airconR134a],
+          ["airconR1234yf", "Air Con R1234yf", capacity.airconR1234yf],
+          ["brakes", "Brakes", capacity.brakes],
         ].map(([key, label, capacity]) => {
           const used = jobsFor(key).length + blocksFor(key);
           return (
@@ -300,6 +332,26 @@ export default function Calendar() {
           );
         })}
       </div>
+
+      {can("pricing") && (
+        <div className="panel workshopCapacityEditor">
+          <div className="diaryPanelTitle"><div><h3>Workshop Capacity Settings</h3><p>These limits control website and manual booking availability.</p></div><strong>{capacityStatus || "Live"}</strong></div>
+          <div className="capacityInputGrid">
+            {[
+              ["motPerHour", "MOT spaces per hour"],
+              ["servicePerHour", "Service spaces per hour"],
+              ["timing", "Cambelt / timing per day"],
+              ["clutch", "Clutches per day"],
+              ["airconR134a", "R134a per day"],
+              ["airconR1234yf", "R1234yf per day"],
+              ["brakes", "Brake jobs per day"],
+            ].map(([key, label]) => (
+              <label key={key}>{label}<input type="number" min="0" value={capacity[key]} onChange={(e) => setCapacity({ ...capacity, [key]: Number(e.target.value || 0) })} /></label>
+            ))}
+          </div>
+          <button className="adminPrimaryButton" type="button" onClick={saveCapacity}>Publish Capacity</button>
+        </div>
+      )}
 
       <div className="diaryMainGrid">
         <div className="panel">

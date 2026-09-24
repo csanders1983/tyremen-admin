@@ -30,7 +30,7 @@ export default function Dashboard() {
   );
 
   const completed = jobs.filter((job) =>
-    ["Done", "completed", "Completed"].includes(job.status)
+    ["Done", "Complete", "complete", "completed", "Completed"].includes(job.status)
   );
 
   const turnoverToday = todayJobs.reduce((total, job) => {
