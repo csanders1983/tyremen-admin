@@ -1,11 +1,12 @@
+import {workshopPost} from '../lib/workshopApi';
 import ItemSearch, {stockLevelPrice,PRICE_LEVELS} from '../components/ItemSearch';
 import TyreBrandLogo from '../components/TyreBrandLogo';
-import {itemDescription,tyreData,upper,isTyre} from '../lib/tyrePresentation';
+import {itemDescription,tyreData,upper,isTyre,isAddon} from '../lib/tyrePresentation';
 import "../admin-pages.css";
 import "../tyre-foreman.css";
 import TechnicianPicker from "../components/TechnicianPicker";
 import WheelPositionPicker from "../components/WheelPositionPicker";
-import { techniciansFor } from "../lib/tyreWork";
+import { techniciansFor,tyreWork } from "../lib/tyreWork";
 import "../workshop-board.css";
 import WorkshopBookingEdit from "../components/WorkshopBookingEdit";
 import WorkshopHistory from "../components/WorkshopHistory";
@@ -434,11 +435,12 @@ Total: £${calculatedTotal.toFixed(2)}
     win.print();
   };
 
+  const firstBay=selected?.bayWorkflow?.first||(selected?.tyreBay?.status==='In bay'||selected?.tyreBay?.status==='Finished'?'tyres':/\bmot\b/i.test(selected?.service||selected?.items?.map(l=>l.name).join(' ')||'')?'tyres':'service');
   return (
-    <section className="adminPage">
+    <section className="adminPage completionWorkspace">
       <div className="adminHero">
         <span>WORKSHOP CONTROL</span>
-        <h2>Orders / Jobs</h2>
+        <h2>Jobs & completion</h2>
         <p>Edit orders, tyres, services, labour, prices and workshop status.</p>
       </div>
 
@@ -512,7 +514,7 @@ Total: £${calculatedTotal.toFixed(2)}
                   <div className="adminReg">
                     {selected.registration || "NO REG"}
                   </div>
-                  <h3>Edit Order</h3>
+                  <h3>Job details</h3>
                   <p>
                     {selected.name || "No name"} |{" "}
                     {selected.status || "New"}
@@ -533,8 +535,10 @@ Total: £${calculatedTotal.toFixed(2)}
                 </div>
               </div>
 
+              {!isCompletedJob(selected)&&selected.items?.some(tyreWork)&&selected.items?.some(line=>!tyreWork(line)&&!['CD','WB','TLV'].includes(line.stockNumber))&&<div className="bayRoutePanel"><strong>Bay route</strong><span>{firstBay==='tyres'?'Tyre bay → Workshop':'Workshop → Tyre bay'}</span><button type="button" onClick={async()=>{try{const first=firstBay==='tyres'?'service':'tyres';await workshopPost('updateWorkshopStage',{jobId:selected.id,revision:selected.stageRevision||0,action:'setFirst',first});setSelected(current=>({...current,bayWorkflow:{first},stageRevision:Number(current.stageRevision||0)+1}));setMessage('Bay order saved. The next bay receives the vehicle after handover.');}catch(e){setMessage(e.message);}}}>Change first bay</button></div>}
+              <nav className="jobSectionNav"><a href="#job-details">Customer & booking</a><a href="#job-items">Work & products</a><a href="#job-finish">Save & invoice</a></nav>
               {!isCompletedJob(selected) && <div className="workshopBoard"><button type="button" className="adminBtn" onClick={() => setEditingBooking(true)}>Edit booking date / time</button>{editingBooking && <WorkshopBookingEdit key={selected.id} job={selected} onClose={() => setEditingBooking(false)} onSaved={result => {setSelected(current => ({...current,...result}));setEditingBooking(false);setMessage("Booking moved. Shared diary updated.");}} />}</div>}
-              <div className="adminFormGrid">
+              <div id="job-details" className="adminFormGrid">
                 <label>
                   Name
                   <input
@@ -656,7 +660,7 @@ Total: £${calculatedTotal.toFixed(2)}
                 />
               </label>
 
-              <div className="adminItemsHeader">
+              <div id="job-items" className="adminItemsHeader">
                 <h3>Services / Tyres / Labour</h3>
 
                 <div>
@@ -683,8 +687,8 @@ Total: £${calculatedTotal.toFixed(2)}
                   Number(item.cost || 0) * Number(item.qty || 0);
 
                 return (
-                  <div className="adminItemEditor" key={index}>
-                    {isTyre(item) && <div className="tyreLineSummary"><TyreBrandLogo line={item}/><strong>{itemDescription(item,true)}</strong></div>}
+                  <details className="adminItemEditor" key={index} open={!isAddon(item)}><summary>{isTyre(item)&&<TyreBrandLogo line={item}/>}<strong>{itemDescription(item)}</strong><span>Qty {item.qty||1} · £{lineTotal.toFixed(2)}</span></summary>
+
 
                     <div className="adminItemInputs">
                       <WheelPositionPicker line={item} onChange={positions => updateItem(index, "positions", positions)} />
@@ -756,11 +760,11 @@ Total: £${calculatedTotal.toFixed(2)}
                         Remove
                       </button>
                     </div>
-                  </div>
+                  </details>
                 );
               })}
 
-              <div className="adminButtonRow">
+              <div id="job-finish" className="adminButtonRow">
                 <button type="button" className="adminBtn" onClick={saveOrder} disabled={Boolean(busy) || isCompletedJob(selected) || selected.status === "Cancelled"}>
                   {busy === "save" ? "Saving…" : "Save Job"}
                 </button>

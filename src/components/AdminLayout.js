@@ -4,7 +4,7 @@ import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-do
 import { ROLE_LABELS, useAuth } from "../auth/AuthContext";
 import SystemIcon from "./SystemIcon";
 const groups = [
-  ["Workspace", [["/", "Overview", "dashboard", "home"], ["/calendar", "Booking diary", "calendar", "calendar"], ["/workshop", "Workshop live", "workshop", "workshop"], ["/tyre-foreman", "Tyre Foreman", "tyreForeman", "workshop"], ["/orders", "Jobs & completion", "jobs", "jobs"]]],
+  ["Workspace", [["/", "Overview", "dashboard", "home"], ["/calendar", "Booking diary", "calendar", "calendar"], ["/workshop", "Workshop live", "workshop", "workshop"], ["/tyre-foreman", "Tyre bay live", "tyreForeman", "workshop"], ["/orders", "Jobs & completion", "jobs", "jobs"]]],
   ["Sales & customers", [["/sales", "Sales & invoices", "sales", "sales"], ["/directory", "Customers & vehicles", "sales", "people"], ["/tyres", "Stock & services", "stock", "stock"]]],
   ["Management", [["/pricing-control", "Pricing & capacity", "pricing", "pricing"], ["/pages", "Website pages", "pages", "pages"], ["/very-cheap-tyres", "Very Cheap Tyres", "vct", "stock"], ["/users", "Staff access", "users", "people"], ["/settings", "Settings", "settings", "settings"]]],
 ];

@@ -20,7 +20,7 @@ export function londonStartMs(date, time) {
 export function jobTiming(job, now = Date.now()) {
   const start = londonStartMs(job.date, job.plan?.startTime || job.time);
   const duration = Number(job.plan?.durationMinutes || 0);
-  const done = Boolean(job.invoiceId) || ["completed", "complete", "done", "ready to collect"].includes(String(job.status || "").toLowerCase());
+  const done = job.stageComplete===true || Boolean(job.invoiceId) || ["completed", "complete", "done", "ready to collect"].includes(String(job.status || "").toLowerCase());
   if (done) return { state: "complete", label: "Work complete", start, end: duration > 0 ? start + duration * 60000 : NaN, progress: 100 };
   if (!Number.isFinite(start) || duration <= 0) return { state: "unplanned", label: "Duration to be set", progress: 0 };
   const end = start + duration * 60000;

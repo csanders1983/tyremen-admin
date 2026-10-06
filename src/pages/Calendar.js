@@ -111,7 +111,9 @@ function JobCell({ job, label }) {
 
 export default function Calendar() {
   const location = useLocation();
-  useEffect(() => { if (location.hash === "#manual-booking") document.getElementById("manual-booking")?.scrollIntoView({ block: "center" }); }, [location.hash]);
+  useEffect(() => { if (location.hash === "#manual-booking") setView("booking"); }, [location.hash]);
+  const [view,setView]=useState("timeline");
+  const [diarySearch,setDiarySearch]=useState("");
   const [jobs, setJobs] = useState([]);
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [closedDays, setClosedDays] = useState([]);
@@ -274,6 +276,9 @@ export default function Calendar() {
         </div>
       )}
 
+      <nav className="diaryViewTabs"><button aria-pressed={view==='timeline'} onClick={()=>setView('timeline')}>Day timeline</button><button aria-pressed={view==='booking'} onClick={()=>setView('booking')}>Add booking</button><button aria-pressed={view==='capacity'} onClick={()=>setView('capacity')}>Capacity & closures</button></nav>
+      {view==='timeline'&&<div className="diaryTimeline sysPanel"><div className="sysPanelHeading"><div><h3>Booking activity</h3><span>{selectedDate} · {dayJobs.length} bookings · {showWholeDay?'Entire day':'Current and next hours'}</span></div></div><div className="sysTableTools"><div><input aria-label="Find diary booking" placeholder="Filter registration, customer or work…" value={diarySearch} onChange={e=>setDiarySearch(e.target.value)}/></div></div><div className="sysTableScroll"><table className="sysActivityTable"><thead><tr><th>Time</th><th>Vehicle / customer</th><th>Work</th><th>Status</th><th>Action</th></tr></thead><tbody>{visibleHours.flatMap(hour=>{const rows=dayJobs.filter(job=>job.time===hour&&[job.registration,job.name,titleFor(job)].join(' ').toLowerCase().includes(diarySearch.toLowerCase()));return rows.length?rows.map(job=><tr key={job.id}><td className="sysTime">{hour}{job.arrivalTime&&job.arrivalTime!==hour&&<small>Arrive {job.arrivalTime}</small>}</td><td><b className="sysPlate">{job.registration||'NO REG'}</b><small>{job.name||'No customer'}</small></td><td><strong>{titleFor(job)}</strong>{(job.items||job.tyres||[]).filter(isTyre).map((line,i)=><TyreBrandLogo key={i} line={line}/>)}<small>{job.technicians?.join(' · ')||job.technician||'Technician unassigned'}</small></td><td><span className={`sysStatus ${['completed','complete','done'].includes(String(job.status).toLowerCase())?'complete':['working','in progress'].includes(String(job.status).toLowerCase())?'working':'waiting'}`}>{job.status||'Booked'}</span></td><td><Link className="sysRowLink" to={`/orders?job=${encodeURIComponent(job.id)}`}>Open →</Link></td></tr>):diarySearch?[]:[<tr key={hour} className="diaryEmptyRow"><td>{hour}</td><td colSpan="4">No bookings</td></tr>]})}</tbody></table></div>{!visibleHours.length&&<div className="sysEmpty">The booked day has ended. Choose Show entire day or the next date.</div>}{diarySearch&&!dayJobs.some(job=>visibleHours.includes(job.time)&&[job.registration,job.name,titleFor(job)].join(' ').toLowerCase().includes(diarySearch.toLowerCase()))&&<div className="sysEmpty">No matching bookings.</div>}</div>}
+      {view==='capacity'&&<>
       <div className="panel diaryPanelWide">
         <div className="diaryPanelTitle">
           <div><h3>Live workshop calendar</h3><p>{isToday ? `Hull time ${clock.hour}:${clock.minute} · ${showWholeDay ? "Entire day" : "Current and next hours"}` : selectedDate} · {capacity.motPerHour} MOT and {capacity.servicePerHour} servicing bays each hour.</p></div>
@@ -326,10 +331,9 @@ export default function Calendar() {
         })}
       </div>
 
-      <div className="panel"><h3>All services · {selectedDate}</h3><div className="diaryAllServiceGrid">{HOURS.map((hour) => <div key={hour} className={`diaryAllServiceHour ${isToday && hour === currentHour ? "current" : ""}`}><strong>{hour}</strong><div>{dayJobs.filter((job) => job.time === hour).map((job) => <Link to={`/orders?job=${encodeURIComponent(job.id)}`} key={job.id}><b>{job.registration || "NO REG"}</b><span>{(job.items||job.tyres||[]).filter(isTyre).map((line,i)=><TyreBrandLogo key={i} line={line}/>)}{titleFor(job)}</span><small>{job.status || "Booked"}</small></Link>)}{!dayJobs.some((job) => job.time === hour) && <span>No bookings</span>}</div></div>)}</div></div>
-
+      </>}
       <div className="diaryMainGrid">
-        <div className="panel">
+        {view==='booking'&&<div className="panel">
           <h3>Add Manual Booking</h3>
           <p className="panelIntro">Uses the same live capacity check as the website.</p>
           <div className="manualBookingForm" id="manual-booking">
@@ -344,9 +348,8 @@ export default function Calendar() {
           <button className="adminPrimaryButton" type="button" disabled={savingManual || closedDay || isSunday} onClick={addManualBooking}>
             {savingManual ? "Checking capacity…" : "Add to workshop diary"}
           </button>
-        </div>
-
-        <div className="panel">
+        </div>}
+        {view==='capacity'&&<div className="panel">
           <h3>Close / Block Capacity</h3>
           <div className="blockForm">
             <select value={blockResource} onChange={(e) => setBlockResource(e.target.value)}>
@@ -369,23 +372,9 @@ export default function Calendar() {
               <button className="danger" type="button" onClick={() => removeBlock(slot.id)}>Remove</button>
             </div>
           ))}
-        </div>
+        </div>}
       </div>
 
-      <div className="panel">
-        <h3>All Bookings For {selectedDate}</h3>
-        {!dayJobs.length ? <p className="empty">No bookings for this date.</p> : (
-          <div className="diaryBookingList">
-            {dayJobs.map((job) => (
-              <div className="diaryBookingCard" key={job.id}>
-                <div className="diaryTime">{job.arrivalTime && job.arrivalTime !== job.time ? `Arrive ${job.arrivalTime}` : job.time || "No time"}</div>
-                <div className="diaryInfo"><strong>{job.registration || "No reg"}</strong><span>{job.name || "No name"}</span><small>{titleFor(job)}</small></div>
-                <div className="diaryPrice">£{Number(job.price || job.total || 0).toFixed(2)}<Link to={`/orders?job=${encodeURIComponent(job.id)}`}>Open job</Link></div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </section>
   );
 }
