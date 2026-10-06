@@ -11,14 +11,16 @@ export const ROLE_LABELS = {
   staff: "Staff",
   accounts: "Accounts",
   "service-manager": "Workshop screen only",
+  "tyre-foreman": "Tyre Foreman",
 };
 
 export const ROLE_ACCESS = {
-  owner: ["dashboard", "jobs", "calendar", "sales", "stock", "pricing", "services", "pages", "settings", "vct", "users", "workshop"],
-  manager: ["dashboard", "jobs", "calendar", "sales", "stock", "services", "vct", "workshop"],
-  staff: ["dashboard", "jobs", "calendar", "sales", "stock", "workshop"],
+  owner: ["tyreForeman", "dashboard", "jobs", "calendar", "sales", "stock", "pricing", "services", "pages", "settings", "vct", "users", "workshop"],
+  manager: ["tyreForeman", "dashboard", "jobs", "calendar", "sales", "stock", "services", "vct", "workshop"],
+  staff: ["tyreForeman", "dashboard", "jobs", "calendar", "sales", "stock", "workshop"],
   accounts: ["dashboard", "sales"],
   "service-manager": ["workshop"],
+  "tyre-foreman": ["tyreForeman"],
 };
 
 export function AuthProvider({ children }) {

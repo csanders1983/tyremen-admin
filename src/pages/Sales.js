@@ -1,4 +1,8 @@
 import "../sales.css";
+import "../tyre-foreman.css";
+import TechnicianPicker from "../components/TechnicianPicker";
+import WheelPositionPicker from "../components/WheelPositionPicker";
+import { techniciansFor } from "../lib/tyreWork";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db, auth } from "../firebase";
@@ -349,6 +353,7 @@ export default function Sales() {
           </div>
           <div className="salesLineWorkspace"><div className="salesLineHead"><span>Description</span><span>Type</span><span>Stock no.</span><span>Qty</span><span>Unit inc VAT</span><span>Discount</span><span>VAT</span><span></span></div>
           {draft.items.map((item, index) => <div className="salesLine" key={index}>
+            <WheelPositionPicker line={item} onChange={positions => setItem(index, "positions", positions)} />
             <input value={item.description} onChange={(e) => setItem(index, "description", e.target.value)} placeholder="Tyre, service, MOT, repair…" />
             <select value={item.type} onChange={(e) => setItem(index, "type", e.target.value)}><option value="tyre">Tyre</option><option value="service">Service / repair</option><option value="mot">MOT</option><option value="part">Part</option><option value="roadhero">Space saver</option><option value="alloy">Alloy wheel</option></select>
             <input value={item.stockNumber} onChange={(e) => setItem(index, "stockNumber", e.target.value)} />
@@ -358,7 +363,7 @@ export default function Sales() {
             <select value={item.vatRate} onChange={(e) => setItem(index, "vatRate", e.target.value)}><option value="20">20%</option><option value="0">0%</option></select>
             <button className="danger" onClick={() => setDraft((current) => ({ ...current, workLineIndices: [], items: current.items.filter((entry, position) => position !== index && (!item.lineId || entry.parentLineId !== item.lineId)) }))}>×</button>
           </div>)}</div>
-          <div className="salesFormGrid"><label>Technician *<select value={draft.technician} onChange={(e) => setDraft({ ...draft, technician: e.target.value })}><option value="">Select technician</option>{ADVISERS.map((name) => <option key={name}>{name}</option>)}</select></label><label className="wide">Work shown to customer<textarea value={draft.workDescription} placeholder="e.g. MOT and full service as requested" onChange={(e) => setDraft({ ...draft, workDescription: e.target.value })} /></label><div className="wide"><p>Choose lines to group on the customer document; all original lines remain in the internal invoice record.</p>{draft.items.map((item, index) => <label key={index}><input type="checkbox" checked={draft.workLineIndices.includes(index)} onChange={(e) => setDraft((current) => ({ ...current, workLineIndices: e.target.checked ? [...current.workLineIndices, index] : current.workLineIndices.filter((value) => value !== index) }))} /> {item.description || `Line ${index + 1}`}</label>)}</div><label className="wide">Advisory notes<textarea value={draft.advisoryNotes} onChange={(e) => setDraft({ ...draft, advisoryNotes: e.target.value })} /></label></div>
+          <div className="salesFormGrid"><TechnicianPicker value={techniciansFor(draft)} onChange={technicians => setDraft({ ...draft, technicians, technician: technicians[0] || "" })} required /><label className="wide">Work shown to customer<textarea value={draft.workDescription} placeholder="e.g. MOT and full service as requested" onChange={(e) => setDraft({ ...draft, workDescription: e.target.value })} /></label><div className="wide"><p>Choose lines to group on the customer document; all original lines remain in the internal invoice record.</p>{draft.items.map((item, index) => <label key={index}><input type="checkbox" checked={draft.workLineIndices.includes(index)} onChange={(e) => setDraft((current) => ({ ...current, workLineIndices: e.target.checked ? [...current.workLineIndices, index] : current.workLineIndices.filter((value) => value !== index) }))} /> {item.description || `Line ${index + 1}`}</label>)}</div><label className="wide">Advisory notes<textarea value={draft.advisoryNotes} onChange={(e) => setDraft({ ...draft, advisoryNotes: e.target.value })} /></label></div>
         </div>
       </div>
 

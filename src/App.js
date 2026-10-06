@@ -15,10 +15,12 @@ import RequireAuth from "./auth/RequireAuth";
 import Users from "./pages/Users";
 import LegacyImport from "./pages/LegacyImport";
 import Directory from "./pages/Directory";
+import TyreForeman from "./pages/TyreForeman";
 import WorkshopBoard from "./pages/WorkshopBoard";
 
 function AdminHome() {
   const { role } = useAuth();
+  if (role === "tyre-foreman") return <Navigate to="/tyre-foreman" replace />;
   return role === "service-manager" ? <Navigate to="/workshop-screen" replace /> : <RequireAuth permission="dashboard"><Dashboard /></RequireAuth>;
 }
 
@@ -28,9 +30,11 @@ export default function App() {
       <BrowserRouter>
        <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/tyre-bay-screen" element={<RequireAuth permission="tyreForeman"><TyreForeman screen /></RequireAuth>} />
         <Route path="/workshop-screen" element={<RequireAuth permission="workshop"><WorkshopBoard screen /></RequireAuth>} />
         <Route path="/" element={<RequireAuth><AdminLayout /></RequireAuth>}>
           <Route index element={<AdminHome />} />
+          <Route path="tyre-foreman" element={<RequireAuth permission="tyreForeman"><TyreForeman /></RequireAuth>} />
           <Route path="workshop" element={<RequireAuth permission="workshop"><WorkshopBoard /></RequireAuth>} />
           <Route path="orders" element={<RequireAuth permission="jobs"><Orders /></RequireAuth>} />
           <Route path="calendar" element={<RequireAuth permission="calendar"><Calendar /></RequireAuth>} />

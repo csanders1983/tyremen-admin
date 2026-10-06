@@ -1,4 +1,8 @@
 import "../admin-pages.css";
+import "../tyre-foreman.css";
+import TechnicianPicker from "../components/TechnicianPicker";
+import WheelPositionPicker from "../components/WheelPositionPicker";
+import { techniciansFor } from "../lib/tyreWork";
 import "../workshop-board.css";
 import WorkshopBookingEdit from "../components/WorkshopBookingEdit";
 import WorkshopHistory from "../components/WorkshopHistory";
@@ -39,7 +43,7 @@ export default function Orders() {
   const [editingBooking, setEditingBooking] = useState(false);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
-  const [technicians, setTechnicians] = useState([]);
+  const [, setTechnicians] = useState([]);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
 
@@ -177,7 +181,8 @@ useEffect(() => {
   };
 
   const orderUpdate = (statusOverride) => ({
-    technician: selected.technician || "",
+    technician: selected.technicians?.[0] || selected.technician || "",
+    technicians: techniciansFor(selected).filter(Boolean),
     name: selected.name || "",
     phone: selected.phone || "",
     email: selected.email || "",
@@ -230,6 +235,7 @@ useEffect(() => {
         : Math.max(0, Number(proportional.toFixed(2)));
       allocated += discountIncVat;
       return {
+        positions: item.positions || [], brand: item.brand || "", pattern: item.pattern || "", size: item.size || "", loadSpeed: item.loadSpeed || "", stockProductId: item.stockProductId || "",
         type: item.type || "service",
         description: item.name || item.description || item.service || "Workshop work",
         stockNumber: item.stockNumber || item.code || item.sku || "",
@@ -290,6 +296,8 @@ useEffect(() => {
             mileage: selected.mileage || vehicle.mileage || "",
           },
           vehicleData: vehicle,
+          technician: selected.technicians?.[0] || selected.technician || "",
+          technicians: techniciansFor(selected).filter(Boolean),
           items: invoiceItems,
           amountPaid: Number(selected.amountPaid || 0),
           paymentMethod: selected.paymentMethod || "unpaid",
@@ -581,23 +589,7 @@ Total: £${calculatedTotal.toFixed(2)}
                     {selected.status === "Cancelled" && <option>Cancelled</option>}
                   </select>
                 </label>
-               <label>
-  Assigned Technician
-  <select
-    value={selected.technician || ""}
-    onChange={(e) => updateField("technician", e.target.value)}
-  >
-    <option value="">Unassigned</option>
-
-    {technicians
-      .filter((tech) => tech.active)
-      .map((tech) => (
-        <option key={tech.id} value={tech.name}>
-          {tech.name}
-        </option>
-      ))}
-  </select>
-</label>
+               <TechnicianPicker value={techniciansFor(selected)} onChange={technicians => setSelected(current => ({ ...current, technicians, technician: technicians[0] || "" }))} />
                 <label>
                   Overall Discount (£)
                   <input
@@ -672,6 +664,7 @@ Total: £${calculatedTotal.toFixed(2)}
                     )}
 
                     <div className="adminItemInputs">
+                      <WheelPositionPicker line={item} onChange={positions => updateItem(index, "positions", positions)} />
                       <input
                         placeholder="Item name"
                         value={item.name || ""}

@@ -12,11 +12,11 @@ export function buildInvoiceHtml(invoice) {
   const title = invoice.documentType === "credit-note" ? "CREDIT NOTE" : invoice.documentType === "order" ? "SALES ORDER" : invoice.documentType === "quote" ? "QUOTATION" : "VAT INVOICE";
   const grouped = new Set(invoice.workDescription ? (invoice.workLineIndices || []).filter((index) => Number.isInteger(index) && index >= 0 && index < totals.lines.length) : []);
   const groupLines = [...grouped].map((index) => totals.lines[index]);
-  const group = groupLines.length ? { description: invoice.workDescription, detail: groupLines.map((line) => `${line.quantity} × ${line.description}`).join(" · "), quantity: 1, unitPriceIncVat: groupLines.reduce((sum, line) => sum + line.gross, 0), discountIncVat: 0, net: groupLines.reduce((sum, line) => sum + line.net, 0), vat: groupLines.reduce((sum, line) => sum + line.vat, 0), gross: groupLines.reduce((sum, line) => sum + line.gross, 0), vatRate: new Set(groupLines.map((line) => line.vatRate)).size === 1 ? groupLines[0].vatRate : "Mixed" } : null;
+  const group = groupLines.length ? { description: invoice.workDescription, detail: groupLines.map((line) => `${line.quantity} × ${line.description}${line.positions?.length ? " (" + line.positions.join(" / ") + ")" : ""}`).join(" · "), quantity: 1, unitPriceIncVat: groupLines.reduce((sum, line) => sum + line.gross, 0), discountIncVat: 0, net: groupLines.reduce((sum, line) => sum + line.net, 0), vat: groupLines.reduce((sum, line) => sum + line.vat, 0), gross: groupLines.reduce((sum, line) => sum + line.gross, 0), vatRate: new Set(groupLines.map((line) => line.vatRate)).size === 1 ? groupLines[0].vatRate : "Mixed" } : null;
   const visibleLines = [...(group ? [group] : []), ...totals.lines.filter((_, index) => !grouped.has(index))];
   const rows = visibleLines.map((line) => `
     <tr>
-      <td><strong>${escapeHtml(line.description)}</strong>${line.detail ? `<small>${escapeHtml(line.detail)}</small>` : line.stockNumber ? `<small>Stock: ${escapeHtml(line.stockNumber)}</small>` : ""}</td>
+      <td><strong>${escapeHtml((line.description || "") + (line.positions?.length ? " · " + line.positions.join(" / ") : ""))}</strong>${line.detail ? `<small>${escapeHtml(line.detail)}</small>` : line.stockNumber ? `<small>Stock: ${escapeHtml(line.stockNumber)}</small>` : ""}</td>
       <td>${money(line.quantity)}</td><td>£${money(line.unitPriceIncVat)}</td>
       <td>£${money(line.discountIncVat)}</td><td>${line.vatRate === "Mixed" ? "Mixed" : `${money(line.vatRate)}%`}</td>
       <td>£${money(line.net)}</td><td>£${money(line.vat)}</td><td>£${money(line.gross)}</td>

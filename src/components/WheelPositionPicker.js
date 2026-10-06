@@ -1,0 +1,2 @@
+import {WHEEL_POSITIONS,wheelWork} from '../lib/tyreWork';
+export default function WheelPositionPicker({line,onChange}){if(!wheelWork(line))return null;const selected=line.positions||[],qty=Number(line.qty??line.quantity??1);return <fieldset className="wheelPositionPicker"><legend>Wheel positions * · choose {qty}</legend>{WHEEL_POSITIONS.map(position=><label key={position}><input type="checkbox" checked={selected.includes(position)} onChange={e=>onChange(e.target.checked?[...selected,position]:selected.filter(p=>p!==position))}/>{position}</label>)}</fieldset>;}
