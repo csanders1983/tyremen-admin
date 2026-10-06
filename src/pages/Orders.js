@@ -1,17 +1,22 @@
 import "../admin-pages.css";
-import { useEffect, useMemo, useState } from "react";
+import "../workshop-board.css";
+import WorkshopBookingEdit from "../components/WorkshopBookingEdit";
+import WorkshopHistory from "../components/WorkshopHistory";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
   onSnapshot,
   query,
   orderBy,
   doc,
+  getDoc,
   updateDoc,
-  deleteDoc,
 } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { useAuth } from "../auth/AuthContext";
+
+const isCompletedJob = job => Boolean(job?.invoiceId) || ["completed","complete","done"].includes(String(job?.status || "").trim().toLowerCase());
 
 const FUNCTIONS_ROOT = "https://us-central1-tyremen-system.cloudfunctions.net";
 
@@ -25,13 +30,24 @@ const isMotLine = (item) => /\bmot\b/.test(lineText(item));
 
 export default function Orders() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const linkedJobId = searchParams.get("job");
+  const openedJobId = useRef("");
   const { profile, can } = useAuth();
   const [jobs, setJobs] = useState([]);
+  const [jobView, setJobView] = useState("active");
+  const [editingBooking, setEditingBooking] = useState(false);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
   const [technicians, setTechnicians] = useState([]);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!linkedJobId || openedJobId.current === linkedJobId) return;
+    const linked = jobs.find((job) => job.id === linkedJobId);
+    if (linked) { openedJobId.current = linkedJobId; setSelected(linked); setJobView("active"); setSearch(""); }
+  }, [linkedJobId, jobs]);
 
   useEffect(() => {
     const q = query(collection(db, "jobs"), orderBy("createdAt", "desc"));
@@ -65,6 +81,7 @@ useEffect(() => {
     const term = search.toLowerCase();
 
     return jobs.filter((job) => {
+      if (isCompletedJob(job)) return false;
       return [
         job.name,
         job.phone,
@@ -166,8 +183,6 @@ useEffect(() => {
     email: selected.email || "",
     registration: selected.registration || "",
     service: selected.service || "",
-    date: selected.date || "",
-    time: selected.time || "",
     status: statusOverride || selected.status || "New",
     notes: selected.notes || "",
     discount: Number(effectiveDiscount || 0),
@@ -182,10 +197,12 @@ useEffect(() => {
   });
 
   const saveOrder = async () => {
-    if (!selected?.id) return;
+    if (!selected?.id || isCompletedJob(selected)) return;
     setBusy("save");
     setMessage("");
     try {
+      const latest = await getDoc(doc(db, "jobs", selected.id));
+      if (!latest.exists() || isCompletedJob(latest.data()) || latest.data().status === "Cancelled") throw new Error("This booking was cancelled. Refresh before editing it.");
       const update = orderUpdate();
       await updateDoc(doc(db, "jobs", selected.id), update);
       setSelected((current) => ({ ...current, ...update }));
@@ -243,6 +260,8 @@ useEffect(() => {
     try {
       // Save the final workshop lines first. The secure invoice function then
       // creates one idempotent invoice and links it back to this job.
+      const latest = await getDoc(doc(db, "jobs", selected.id));
+      if (!latest.exists() || latest.data().status === "Cancelled") throw new Error("This booking was cancelled. It cannot be invoiced.");
       await updateDoc(doc(db, "jobs", selected.id), orderUpdate("Ready To Collect"));
       const token = await auth.currentUser.getIdToken();
       const vehicle = selected.vehicle || {};
@@ -297,14 +316,25 @@ useEffect(() => {
     }
   };
 
-  const deleteOrder = async () => {
-    if (!selected?.id) return;
-
-    const ok = window.confirm("Delete this order?");
-    if (!ok) return;
-
-    await deleteDoc(doc(db, "jobs", selected.id));
-    setSelected(null);
+  const cancelOrder = async () => {
+    if (!selected?.id || busy || selected.invoiceId || selected.status === "Cancelled") return;
+    const reason = window.prompt("Reason for cancelling this booking (required):");
+    if (reason === null) return;
+    if (!reason.trim()) return setMessage("Enter a reason to cancel the booking.");
+    if (!window.confirm(`Cancel ${selected.registration || selected.name || "this booking"}? The booking will stay in the job history.`)) return;
+    setBusy("cancel"); setMessage("");
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch(`${FUNCTIONS_ROOT}/cancelWorkshopJob`, {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ jobId: selected.id, reason: reason.trim() }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Could not cancel booking");
+      setSelected((current) => ({ ...current, status: "Cancelled", cancellationReason: reason.trim() }));
+      setMessage("Booking cancelled, capacity released and the change recorded in the audit history.");
+    } catch (error) { setMessage(error.message || "Could not cancel booking."); }
+    finally { setBusy(""); }
   };
 
   const acceptOrder = async () => {
@@ -381,6 +411,8 @@ Total: £${calculatedTotal.toFixed(2)}
         <p>Edit orders, tyres, services, labour, prices and workshop status.</p>
       </div>
 
+      <div className="workshopBoard"><div className="wbWorkspaceTabs"><button type="button" aria-pressed={jobView === "active"} onClick={() => setJobView("active")}>Active jobs</button><button type="button" aria-pressed={jobView === "history"} onClick={() => {setJobView("history");setEditingBooking(false);}}>Completed history</button></div>{jobView === "history" && <WorkshopHistory />}</div>
+      {jobView === "active" && <>
       <div className="adminStats">
         <div className="adminStat">
           <span>Total Orders</span>
@@ -470,6 +502,7 @@ Total: £${calculatedTotal.toFixed(2)}
                 </div>
               </div>
 
+              {!isCompletedJob(selected) && <div className="workshopBoard"><button type="button" className="adminBtn" onClick={() => setEditingBooking(true)}>Edit booking date / time</button>{editingBooking && <WorkshopBookingEdit key={selected.id} job={selected} onClose={() => setEditingBooking(false)} onSaved={result => {setSelected(current => ({...current,...result}));setEditingBooking(false);setMessage("Booking moved. Shared diary updated.");}} />}</div>}
               <div className="adminFormGrid">
                 <label>
                   Name
@@ -519,7 +552,7 @@ Total: £${calculatedTotal.toFixed(2)}
                     type="date"
                     value={selected.date || ""}
                     readOnly
-                    title="Cancel and rebook in Workshop Diary so capacity is checked"
+                    title="Use Edit booking to change the appointment with a capacity check"
                   />
                 </label>
 
@@ -528,7 +561,7 @@ Total: £${calculatedTotal.toFixed(2)}
                   <input
                     value={selected.time || ""}
                     readOnly
-                    title="Cancel and rebook in Workshop Diary so capacity is checked"
+                    title="Use Edit booking to change the appointment with a capacity check"
                   />
                 </label>
 
@@ -545,7 +578,7 @@ Total: £${calculatedTotal.toFixed(2)}
                     <option>Waiting Parts</option>
                     <option>Ready To Collect</option>
                     <option disabled={!selected.invoiceId}>Completed</option>
-                    <option>Cancelled</option>
+                    {selected.status === "Cancelled" && <option>Cancelled</option>}
                   </select>
                 </label>
                <label>
@@ -711,11 +744,11 @@ Total: £${calculatedTotal.toFixed(2)}
               })}
 
               <div className="adminButtonRow">
-                <button type="button" className="adminBtn" onClick={saveOrder} disabled={Boolean(busy)}>
+                <button type="button" className="adminBtn" onClick={saveOrder} disabled={Boolean(busy) || isCompletedJob(selected) || selected.status === "Cancelled"}>
                   {busy === "save" ? "Saving…" : "Save Job"}
                 </button>
 
-                <button type="button" className="adminBtn" onClick={acceptOrder}>
+                <button type="button" className="adminBtn" onClick={acceptOrder} disabled={isCompletedJob(selected) || selected.status === "Cancelled"}>
                   Accept + Email Text
                 </button>
 
@@ -723,7 +756,7 @@ Total: £${calculatedTotal.toFixed(2)}
                   Print Job Card
                 </button>
 
-                {can("sales") && !selected.invoiceId && (
+                {can("sales") && !selected.invoiceId && selected.status !== "Cancelled" && (
                   <button
                     type="button"
                     className="adminBtn completeInvoiceButton"
@@ -744,18 +777,15 @@ Total: £${calculatedTotal.toFixed(2)}
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  className="adminBtn danger"
-                  onClick={deleteOrder}
-                >
-                  Delete
-                </button>
+                {!selected.invoiceId && selected.status !== "Cancelled" && <button
+                  type="button" className="adminBtn danger" onClick={cancelOrder} disabled={Boolean(busy)}
+                >{busy === "cancel" ? "Cancelling…" : "Cancel booking"}</button>}
               </div>
             </div>
           )}
         </div>
       </div>
+    </>}
     </section>
   );
 }

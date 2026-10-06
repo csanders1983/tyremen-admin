@@ -1,0 +1,9 @@
+import {useState} from 'react';
+import {workshopPost} from '../lib/workshopApi';
+const hours=['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'];
+export default function WorkshopBookingEdit({job,onSaved,onClose}) {
+  const [date,setDate]=useState(job.date||''); const [time,setTime]=useState(job.time||'09:00');
+  const [reason,setReason]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+  async function save(event){event.preventDefault();setBusy(true);setError('');try{const result=await workshopPost('rescheduleWorkshopJob',{jobId:job.id,date,time,reason,previousDate:job.date,previousTime:job.time});onSaved(result);}catch(e){setError(e.message);}finally{setBusy(false);}}
+  return <form className="wbEditor wbBookingEdit" onSubmit={save}><h2>Edit booking · {job.registration}</h2><p>Current appointment: {job.date} at {job.time}. Reserved capacity, arrival time and workshop plan will move together.</p><div><label>Booking date<input aria-label="New booking date" type="date" value={date} required onChange={e=>setDate(e.target.value)}/></label><label>Appointment time<select aria-label="New booking time" value={time} onChange={e=>setTime(e.target.value)}>{hours.map(hour=><option key={hour}>{hour}</option>)}</select></label><label className="wbWideField">Reason for change<input value={reason} maxLength={500} required onChange={e=>setReason(e.target.value)} placeholder="e.g. Customer requested a later appointment"/></label></div>{error&&<div className="wbNotice" role="alert">{error}</div>}<div className="wbInlineActions"><button disabled={busy} type="submit">{busy?'Checking capacity…':'Save booking change'}</button><button disabled={busy} type="button" onClick={onClose}>Cancel</button></div><p>This updates the shared diary. It does not send a customer notification.</p></form>;
+}

@@ -1,225 +1,38 @@
 import "./Dashboard.css";
 import { useEffect, useMemo, useState } from "react";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { Link } from "react-router-dom";
 import { db } from "../firebase";
-
+import { useAuth } from "../auth/AuthContext";
+import { londonDate } from "../lib/workshopTime";
+import SystemIcon from "../components/SystemIcon";
+const stateOf = (job) => String(job.status || "New").toLowerCase().replace(/\s/g, "");
+const done = (job) => ["done", "complete", "completed", "readytocollect"].includes(stateOf(job));
+const working = (job) => ["working", "inprogress"].includes(stateOf(job));
 export default function Dashboard() {
+  const { can } = useAuth();
+  const [date, setDate] = useState(londonDate);
   const [jobs, setJobs] = useState([]);
-  const [view, setView] = useState("today");
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
   useEffect(() => {
-    const q = query(collection(db, "jobs"), orderBy("createdAt", "desc"));
-
-    const unsub = onSnapshot(q, (snapshot) => {
-      setJobs(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    });
-
-    return () => unsub();
-  }, []);
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  const todayJobs = useMemo(() => {
-    return jobs.filter((job) => job.date === today);
-  }, [jobs, today]);
-
-  const newJobs = jobs.filter((job) => !job.status || job.status === "New");
-
-  const inProgress = jobs.filter((job) =>
-    ["Working", "inprogress", "In Progress"].includes(job.status)
-  );
-
-  const completed = jobs.filter((job) =>
-    ["Done", "Complete", "complete", "completed", "Completed"].includes(job.status)
-  );
-
-  const turnoverToday = todayJobs.reduce((total, job) => {
-    return total + Number(job.price || job.total || 0);
-  }, 0);
-
-  const serviceCounts = todayJobs.reduce((acc, job) => {
-    const name = job.type === "tyres" ? "Tyres" : job.service || "Other";
-    acc[name] = (acc[name] || 0) + 1;
-    return acc;
-  }, {});
-
-  const getStockNumbers = (job) => {
-    return [
-      ...(Array.isArray(job.tyres) ? job.tyres : []),
-      ...(Array.isArray(job.items) ? job.items : []),
-    ]
-      .map(
-        (item) =>
-          item.stockNumber ||
-          item["Stock Number"] ||
-          item["Stock No"] ||
-          item["Stock Code"] ||
-          item.StockNumber ||
-          item.stockNo ||
-          item.stockCode ||
-          ""
-      )
-      .filter(Boolean);
-  };
-
-  return (
-    <section className="dashPage">
-      <div className="dashHero">
-        <div>
-          <span>LIVE OVERVIEW</span>
-          <h2>Dashboard Home</h2>
-          <p>Today’s bookings, alerts, turnover and service totals.</p>
-        </div>
-
-        <select value={view} onChange={(e) => setView(e.target.value)}>
-          <option value="today">Today</option>
-          <option value="day">Day View</option>
-          <option value="week">Week View</option>
-          <option value="month">Month View</option>
-          <option value="year">Year View</option>
-        </select>
-      </div>
-
-      <div className="dashStatsGrid">
-        <div className="dashStatCard yellow">
-          <span>New Orders</span>
-          <strong>{newJobs.length}</strong>
-          <small>Awaiting action</small>
-        </div>
-
-        <div className="dashStatCard blue">
-          <span>Today’s Bookings</span>
-          <strong>{todayJobs.length}</strong>
-          <small>Booked for today</small>
-        </div>
-
-        <div className="dashStatCard green">
-          <span>Completed</span>
-          <strong>{completed.length}</strong>
-          <small>Finished jobs</small>
-        </div>
-
-        <div className="dashStatCard purple">
-          <span>Today’s Turnover</span>
-          <strong>£{turnoverToday.toFixed(2)}</strong>
-          <small>{view.toUpperCase()} view</small>
-        </div>
-      </div>
-
-      <div className="dashMainGrid">
-        <div className="dashPanel">
-          <div className="dashPanelHead">
-            <h3>Bookings By Service Today</h3>
-            <span>{Object.keys(serviceCounts).length} services</span>
-          </div>
-
-          {Object.keys(serviceCounts).length === 0 ? (
-            <p className="dashEmpty">No bookings today.</p>
-          ) : (
-            <div className="dashServiceList">
-              {Object.entries(serviceCounts).map(([service, count]) => (
-                <div className="dashServiceRow" key={service}>
-                  <div>
-                    <strong>{service}</strong>
-                    <small>Bookings today</small>
-                  </div>
-
-                  <b>{count}</b>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="dashPanel">
-          <div className="dashPanelHead">
-            <h3>Today’s Bookings</h3>
-            <span>{todayJobs.length} jobs</span>
-          </div>
-
-          {todayJobs.length === 0 ? (
-            <p className="dashEmpty">No bookings found for today.</p>
-          ) : (
-            <div className="dashBookingList">
-              {todayJobs.map((job) => {
-                const stockNumbers = getStockNumbers(job);
-
-                return (
-                  <div className="dashBookingCard" key={job.id}>
-                    <div className="dashBookingTop">
-                      <div className="dashRegPlate">
-                        {job.registration || "NO REG"}
-                      </div>
-
-                      <strong>{job.time || "No time"}</strong>
-                    </div>
-
-                    <h4>{job.name || "No name"}</h4>
-
-                    <p>{job.service || job.type || "Service"}</p>
-
-                    {Array.isArray(job.tyres) && job.tyres.length > 0 && (
-                      <div className="dashTyreBox">
-                        {job.tyres.map((tyre, index) => (
-                          <small key={index}>
-                            {tyre.qty || 1} x {tyre.size} {tyre.brand}{" "}
-                            {tyre.pattern}
-                          </small>
-                        ))}
-                      </div>
-                    )}
-
-                    {stockNumbers.length > 0 && (
-                      <div className="dashStockBox">
-                        {stockNumbers.map((stock, index) => (
-                          <span key={index}>Stock No: {stock}</span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="dashBookingFooter">
-                      <span>{job.status || "New"}</span>
-                      <b>£{Number(job.price || job.total || 0).toFixed(2)}</b>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="dashBoardPreview">
-        <div className="dashMiniColumn">
-          <h3>Waiting</h3>
-          {newJobs.slice(0, 4).map((job) => (
-            <div className="dashMiniJob" key={job.id}>
-              <strong>{job.registration || "NO REG"}</strong>
-              <span>{job.service || job.type || "Booking"}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="dashMiniColumn blue">
-          <h3>In Progress</h3>
-          {inProgress.slice(0, 4).map((job) => (
-            <div className="dashMiniJob" key={job.id}>
-              <strong>{job.registration || "NO REG"}</strong>
-              <span>{job.service || job.type || "Booking"}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="dashMiniColumn green">
-          <h3>Completed</h3>
-          {completed.slice(0, 4).map((job) => (
-            <div className="dashMiniJob" key={job.id}>
-              <strong>{job.registration || "NO REG"}</strong>
-              <span>{job.service || job.type || "Booking"}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+    setLoading(true); setError(""); setJobs([]);
+    return onSnapshot(query(collection(db, "jobs"), where("date", "==", date)), (snapshot) => {
+      setJobs(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() })).filter((job) => !["cancelled", "canceled", "deleted"].includes(stateOf(job)))); setLoading(false);
+    }, () => { setError("Could not load bookings. Check your connection or access."); setLoading(false); });
+  }, [date]);
+  const rows = useMemo(() => jobs.filter((job) => [job.registration, job.name, job.service, job.technician].join(" ").toLowerCase().includes(search.trim().toLowerCase())).sort((a,b) => String(a.time || "99:99").localeCompare(String(b.time || "99:99"))), [jobs, search]);
+  const services = Object.entries(jobs.reduce((result,job) => { const name = job.service || job.type || "Other work"; result[name] = (result[name] || 0) + 1; return result; }, {})).sort((a,b) => b[1]-a[1]);
+  const total = jobs.reduce((sum,job) => sum + (Number(job.total ?? job.price) || 0),0);
+  const waiting = jobs.filter((job) => !done(job) && !working(job));
+  const metrics = [["Bookings",jobs.length,"For the selected day"],["Awaiting work",waiting.length,"Booked / accepted"],["In progress",jobs.filter(working).length,"Work under way"],["Work complete",jobs.filter(done).length,"Finished / ready to collect"]];
+  return <section className="sysOverview">
+    <div className="sysOverviewHeading"><div><span className="sysEyebrow">DAILY OPERATIONS</span><h2>Your day, at a glance.</h2><p>Bookings, workshop progress and the next action.</p></div><div className="sysDateControl"><button type="button" onClick={() => setDate(londonDate())}>Today</button><input type="date" aria-label="Overview date" value={date} onChange={(event) => setDate(event.target.value || londonDate())} /></div></div>
+    {error && <div className="adminInfoBox" role="alert">{error}</div>}
+    <div className="sysMetricGrid">{metrics.map(([label,value,caption],index) => <div className="sysMetric" key={label}><span>{label}<SystemIcon name={index === 0 ? "calendar" : "jobs"} size={17} /></span><b>{loading || error ? "—" : value}</b><small>{caption}</small></div>)}</div>
+    <div className="sysOverviewGrid"><div className="sysPanel"><div className="sysPanelHeading"><div><h3>Booking activity</h3><span>{date} · {jobs.length} bookings</span></div>{can("calendar") && <Link to="/calendar">Open diary <SystemIcon name="arrow" size={16} /></Link>}</div><div className="sysTableTools"><div><SystemIcon name="search" size={17} /><input aria-label="Filter selected-day bookings" placeholder="Filter registration, customer or technician…" value={search} onChange={(event) => setSearch(event.target.value)} /></div><span>{rows.length} results</span></div><div className="sysTableScroll"><table className="sysActivityTable"><thead><tr><th>Time</th><th>Vehicle / customer</th><th>Work</th><th>Status</th><th>Action</th></tr></thead><tbody>{rows.map((job) => <tr key={job.id}><td className="sysTime">{job.time || "—"}</td><td><b className="sysPlate">{job.registration || "NO REG"}</b><small>{job.name || "Customer not recorded"}</small></td><td><strong>{job.service || job.type || "Workshop work"}</strong><small>{job.technician || "Technician unassigned"}</small></td><td><span className={`sysStatus ${done(job) ? "complete" : working(job) ? "working" : "waiting"}`}>{job.status || "New"}</span></td><td>{can("jobs") ? <Link className="sysRowLink" to={`/orders?job=${encodeURIComponent(job.id)}`}>Open <SystemIcon name="arrow" size={15} /></Link> : <span>View only</span>}</td></tr>)}</tbody></table></div>{!rows.length && <div className="sysEmpty">{loading ? "Loading bookings…" : error ? "Booking data unavailable." : search ? "No bookings match your search." : "No bookings for this date."}</div>}</div>
+      <aside className="sysOverviewAside"><div className="sysPanel sysDayValue"><span className="sysEyebrow">BOOKED VALUE</span><b>{loading || error ? "—" : `£${total.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2})}`}</b><p>Value of these bookings. Final invoices and payments are in Sales.</p>{can("sales") && <Link to="/sales">Open sales <SystemIcon name="arrow" size={16} /></Link>}</div><div className="sysPanel"><div className="sysPanelHeading"><h3>Work mix</h3><span>{services.length} types</span></div>{services.slice(0,6).map(([service,count]) => <div className="sysServiceMix" key={service}><span>{service}<b>{count}</b></span><i><em style={{width:`${count / Math.max(jobs.length,1) * 100}%`}} /></i></div>)}{!services.length && <p className="sysMuted">{loading ? "Loading work mix…" : "No work booked."}</p>}</div><div className="sysPanel sysNextAction"><h3>Keep the day moving</h3>{can("workshop") && <Link to="/workshop"><SystemIcon name="workshop" /><span>Workshop live<small>Plans, progress & alerts</small></span><SystemIcon name="arrow" size={16} /></Link>}{can("sales") && <Link to="/sales"><SystemIcon name="sales" /><span>Create a sale<small>Quote, order or VAT invoice</small></span><SystemIcon name="arrow" size={16} /></Link>}{can("stock") && <Link to="/tyres"><SystemIcon name="stock" /><span>Find stock<small>Tyremen & partner stock</small></span><SystemIcon name="arrow" size={16} /></Link>}</div></aside>
+    </div>
+  </section>;
 }

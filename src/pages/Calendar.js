@@ -10,13 +10,15 @@ import {
   orderBy,
   setDoc,
 } from "firebase/firestore";
-import { auth, db } from "../firebase";
-import { useAuth } from "../auth/AuthContext";
+import { db } from "../firebase";
+import { Link, useLocation } from "react-router-dom";
 
 const CREATE_BOOKING_URL =
   "https://us-central1-tyremen-system.cloudfunctions.net/createWorkshopBookingV2";
-const FUNCTIONS_ROOT = "https://us-central1-tyremen-system.cloudfunctions.net";
 const HOURS = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
+const londonNow = () => new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).reduce((parts, part) => ({ ...parts, [part.type]: part.value }), {});
+const todayInLondon = () => { const t = londonNow(); return `${t.year}-${t.month}-${t.day}`; };
+const nextDate = (date, amount) => { const value = new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate() + amount); return value.toISOString().slice(0, 10); };
 const JOB_TYPES = [
   ["mot", "MOT"],
   ["service", "Service"],
@@ -95,21 +97,25 @@ function titleFor(job) {
 function JobCell({ job, label }) {
   if (!job) return <div className="diaryLaneCell available"><span>{label}</span><p>Available</p></div>;
   return (
-    <div className="diaryLaneCell booked">
+    <Link to={`/orders?job=${encodeURIComponent(job.id)}`} className="diaryLaneCell booked" aria-label={`Open ${job.registration || job.name || "booking"} in Jobs Board`}>
       <span>{label}</span>
       <b>{job.registration || "NO REG"}</b>
       <small>{job.name || "No name"}</small>
       <em>{titleFor(job)}</em>
-    </div>
+    </Link>
   );
 }
 
 export default function Calendar() {
-  const { can } = useAuth();
+  const location = useLocation();
+  useEffect(() => { if (location.hash === "#manual-booking") document.getElementById("manual-booking")?.scrollIntoView({ block: "center" }); }, [location.hash]);
   const [jobs, setJobs] = useState([]);
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [closedDays, setClosedDays] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(todayInLondon);
+  const [clock, setClock] = useState(londonNow);
+  const [showWholeDay, setShowWholeDay] = useState(false);
+  useEffect(() => { const timer = window.setInterval(() => setClock(londonNow()), 30000); return () => window.clearInterval(timer); }, []);
   const [blockResource, setBlockResource] = useState("mot");
   const [blockTime, setBlockTime] = useState("09:00");
   const [closeReason, setCloseReason] = useState("");
@@ -118,7 +124,6 @@ export default function Calendar() {
   });
   const [savingManual, setSavingManual] = useState(false);
   const [capacity, setCapacity] = useState(DEFAULT_CAPACITY);
-  const [capacityStatus, setCapacityStatus] = useState("");
 
   useEffect(() => {
     const jobsQuery = query(collection(db, "jobs"), orderBy("date", "asc"));
@@ -144,6 +149,9 @@ export default function Calendar() {
       .sort((a, b) => String(a.time || "").localeCompare(String(b.time || ""))),
     [jobs, selectedDate]
   );
+  const isToday = selectedDate === `${clock.year}-${clock.month}-${clock.day}`;
+  const currentHour = `${clock.hour}:00`;
+  const visibleHours = showWholeDay || !isToday ? HOURS : HOURS.filter((hour) => hour >= currentHour);
   const dayBlocks = blockedSlots.filter((slot) => slot.date === selectedDate);
   const closedDay = closedDays.find((day) => day.date === selectedDate);
   const dayNumber = new Date(`${selectedDate}T12:00:00`).getDay();
@@ -163,24 +171,6 @@ export default function Calendar() {
 
   const motBooked = jobsFor("mot").length;
   const serviceBooked = jobsFor("service").length;
-
-  const saveCapacity = async () => {
-    setCapacityStatus("Saving…");
-    try {
-      const token = await auth.currentUser.getIdToken();
-      const response = await fetch(`${FUNCTIONS_ROOT}/updateWorkshopSettings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ capacity }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || "Capacity could not be saved");
-      setCapacity(data.capacity);
-      setCapacityStatus("Live");
-    } catch (error) {
-      setCapacityStatus(error.message || "Save failed");
-    }
-  };
 
   const blockSlot = async () => {
     if (!selectedDate || (!blockTime && ["mot", "service"].includes(blockResource))) {
@@ -264,7 +254,7 @@ export default function Calendar() {
           <h2>Workshop Diary</h2>
           <p>Live website and manual bookings share the same capacity-controlled calendar.</p>
         </div>
-        <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+        <div className="diaryDateControls"><button type="button" onClick={() => setSelectedDate(nextDate(selectedDate, -1))}>← Previous</button><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} /><button type="button" onClick={() => setSelectedDate(todayInLondon())}>Today</button><button type="button" onClick={() => setSelectedDate(nextDate(selectedDate, 1))}>Next →</button><label><input type="checkbox" checked={showWholeDay} onChange={(e) => setShowWholeDay(e.target.checked)} /> Show entire day</label></div>
       </div>
 
       <div className="diaryStatsGrid">
@@ -283,7 +273,7 @@ export default function Calendar() {
 
       <div className="panel diaryPanelWide">
         <div className="diaryPanelTitle">
-          <div><h3>Hourly Workshop Capacity</h3><p>{capacity.motPerHour} MOT and {capacity.servicePerHour} servicing spaces every full hour.</p></div>
+          <div><h3>Live workshop calendar</h3><p>{isToday ? `Hull time ${clock.hour}:${clock.minute} · ${showWholeDay ? "Entire day" : "Current and next hours"}` : selectedDate} · {capacity.motPerHour} MOT and {capacity.servicePerHour} servicing bays each hour.</p></div>
           <div className="diaryLegend"><span className="available">Available</span><span className="booked">Booked</span></div>
         </div>
         <div className="diarySchedule">
@@ -292,7 +282,7 @@ export default function Calendar() {
             {Array.from({ length: capacity.motPerHour }, (_, index) => <span key={`mh-${index}`}>MOT Bay {index + 1}</span>)}
             {Array.from({ length: capacity.servicePerHour }, (_, index) => <span key={`sh-${index}`}>Service {index + 1}</span>)}
           </div>
-          {HOURS.map((hour) => {
+          {visibleHours.map((hour) => {
             const mot = jobsFor("mot", hour);
             const service = jobsFor("service", hour);
             const motBlocks = blocksFor("mot", hour);
@@ -333,31 +323,13 @@ export default function Calendar() {
         })}
       </div>
 
-      {can("pricing") && (
-        <div className="panel workshopCapacityEditor">
-          <div className="diaryPanelTitle"><div><h3>Workshop Capacity Settings</h3><p>These limits control website and manual booking availability.</p></div><strong>{capacityStatus || "Live"}</strong></div>
-          <div className="capacityInputGrid">
-            {[
-              ["motPerHour", "MOT spaces per hour"],
-              ["servicePerHour", "Service spaces per hour"],
-              ["timing", "Cambelt / timing per day"],
-              ["clutch", "Clutches per day"],
-              ["airconR134a", "R134a per day"],
-              ["airconR1234yf", "R1234yf per day"],
-              ["brakes", "Brake jobs per day"],
-            ].map(([key, label]) => (
-              <label key={key}>{label}<input type="number" min="0" value={capacity[key]} onChange={(e) => setCapacity({ ...capacity, [key]: Number(e.target.value || 0) })} /></label>
-            ))}
-          </div>
-          <button className="adminPrimaryButton" type="button" onClick={saveCapacity}>Publish Capacity</button>
-        </div>
-      )}
+      <div className="panel"><h3>All services · {selectedDate}</h3><div className="diaryAllServiceGrid">{HOURS.map((hour) => <div key={hour} className={`diaryAllServiceHour ${isToday && hour === currentHour ? "current" : ""}`}><strong>{hour}</strong><div>{dayJobs.filter((job) => job.time === hour).map((job) => <Link to={`/orders?job=${encodeURIComponent(job.id)}`} key={job.id}><b>{job.registration || "NO REG"}</b><span>{titleFor(job)}</span><small>{job.status || "Booked"}</small></Link>)}{!dayJobs.some((job) => job.time === hour) && <span>No bookings</span>}</div></div>)}</div></div>
 
       <div className="diaryMainGrid">
         <div className="panel">
           <h3>Add Manual Booking</h3>
           <p className="panelIntro">Uses the same live capacity check as the website.</p>
-          <div className="manualBookingForm">
+          <div className="manualBookingForm" id="manual-booking">
             <label>Customer<input value={manual.name} onChange={(e) => setManual({ ...manual, name: e.target.value })} /></label>
             <label>Phone<input value={manual.phone} onChange={(e) => setManual({ ...manual, phone: e.target.value })} /></label>
             <label>Email<input value={manual.email} onChange={(e) => setManual({ ...manual, email: e.target.value })} /></label>
@@ -405,7 +377,7 @@ export default function Calendar() {
               <div className="diaryBookingCard" key={job.id}>
                 <div className="diaryTime">{job.arrivalTime && job.arrivalTime !== job.time ? `Arrive ${job.arrivalTime}` : job.time || "No time"}</div>
                 <div className="diaryInfo"><strong>{job.registration || "No reg"}</strong><span>{job.name || "No name"}</span><small>{titleFor(job)}</small></div>
-                <div className="diaryPrice">£{Number(job.price || job.total || 0).toFixed(2)}</div>
+                <div className="diaryPrice">£{Number(job.price || job.total || 0).toFixed(2)}<Link to={`/orders?job=${encodeURIComponent(job.id)}`}>Open job</Link></div>
               </div>
             ))}
           </div>
