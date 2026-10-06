@@ -1,3 +1,6 @@
+import TyreBrandLogo from '../components/TyreBrandLogo';
+import {isTyre,itemDescription} from '../lib/tyrePresentation';
+import '../tyre-foreman.css';
 import "../admin-pages.css";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -91,7 +94,7 @@ function activeJob(job) {
 }
 
 function titleFor(job) {
-  return job.service || (job.items || []).map((item) => item.name || item.service).filter(Boolean).join(", ") || "Workshop booking";
+  return (job.items?.length?job.items:job.tyres||[]).map(item=>itemDescription(item,isTyre(item))).filter(Boolean).join(" · ") || String(job.service||"Workshop booking").toUpperCase();
 }
 
 function JobCell({ job, label }) {
@@ -101,7 +104,7 @@ function JobCell({ job, label }) {
       <span>{label}</span>
       <b>{job.registration || "NO REG"}</b>
       <small>{job.name || "No name"}</small>
-      <em>{titleFor(job)}</em>
+      {(job.items||job.tyres||[]).filter(isTyre).map((line,i)=><TyreBrandLogo key={i} line={line}/>)}<em>{titleFor(job)}</em>
     </Link>
   );
 }
@@ -323,7 +326,7 @@ export default function Calendar() {
         })}
       </div>
 
-      <div className="panel"><h3>All services · {selectedDate}</h3><div className="diaryAllServiceGrid">{HOURS.map((hour) => <div key={hour} className={`diaryAllServiceHour ${isToday && hour === currentHour ? "current" : ""}`}><strong>{hour}</strong><div>{dayJobs.filter((job) => job.time === hour).map((job) => <Link to={`/orders?job=${encodeURIComponent(job.id)}`} key={job.id}><b>{job.registration || "NO REG"}</b><span>{titleFor(job)}</span><small>{job.status || "Booked"}</small></Link>)}{!dayJobs.some((job) => job.time === hour) && <span>No bookings</span>}</div></div>)}</div></div>
+      <div className="panel"><h3>All services · {selectedDate}</h3><div className="diaryAllServiceGrid">{HOURS.map((hour) => <div key={hour} className={`diaryAllServiceHour ${isToday && hour === currentHour ? "current" : ""}`}><strong>{hour}</strong><div>{dayJobs.filter((job) => job.time === hour).map((job) => <Link to={`/orders?job=${encodeURIComponent(job.id)}`} key={job.id}><b>{job.registration || "NO REG"}</b><span>{(job.items||job.tyres||[]).filter(isTyre).map((line,i)=><TyreBrandLogo key={i} line={line}/>)}{titleFor(job)}</span><small>{job.status || "Booked"}</small></Link>)}{!dayJobs.some((job) => job.time === hour) && <span>No bookings</span>}</div></div>)}</div></div>
 
       <div className="diaryMainGrid">
         <div className="panel">

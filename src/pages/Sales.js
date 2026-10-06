@@ -1,3 +1,6 @@
+import ItemSearch from '../components/ItemSearch';
+import TyreBrandLogo from '../components/TyreBrandLogo';
+import {itemDescription,tyreData,upper,isTyre} from '../lib/tyrePresentation';
 import "../sales.css";
 import "../tyre-foreman.css";
 import TechnicianPicker from "../components/TechnicianPicker";
@@ -45,9 +48,9 @@ export default function Sales() {
   const [message, setMessage] = useState("");
   const [vehicleRaw, setVehicleRaw] = useState(null);
   const [stockProducts, setStockProducts] = useState([]);
-  const [stockSearch, setStockSearch] = useState("");
+  const [itemSearchOpen,setItemSearchOpen]=useState(false);
   const [serviceMaster, setServiceMaster] = useState([]);
-  const [serviceSearch, setServiceSearch] = useState("");
+
   const [customers, setCustomers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [customerSearch, setCustomerSearch] = useState("");
@@ -124,21 +127,11 @@ export default function Sales() {
   }, [customers, customerSearch]);
   const storedVehicle = vehicles.find((vehicle) => vehicle.registration === draft.vehicle.registration.replace(/\s/g, "").toUpperCase());
   const vehicleHistory = invoices.filter((entry) => draft.vehicle.registration && entry.vehicle?.registration?.replace(/\s/g, "") === draft.vehicle.registration.replace(/\s/g, "").toUpperCase());
-  const matchingStock = useMemo(() => {
-    const term = stockSearch.trim().toLowerCase();
-    if (!term) return [];
-    return stockProducts.filter((product) => product.active !== false && [product.sku, product.description, product.brand, product.pattern, product.size].join(" ").toLowerCase().includes(term)).slice(0, 12);
-  }, [stockProducts, stockSearch]);
-  const matchingServices = useMemo(() => {
-    const term = serviceSearch.trim().toLowerCase();
-    if (!term) return [];
-    return serviceMaster.filter((service) => [service.code, service.name, service.category, service.notes].join(" ").toLowerCase().includes(term)).slice(0, 12);
-  }, [serviceMaster, serviceSearch]);
-
   const setCustomer = (field, value) => setDraft((current) => ({ ...current, customer: { ...current.customer, [field]: value } }));
   const setVehicle = (field, value) => setDraft((current) => ({ ...current, vehicle: { ...current.vehicle, [field]: value } }));
   const setItem = (index, field, value) => setDraft((current) => {
     const parent = current.items[index];
+    if(field === "description") value=upper(value);
     const updated = ["quantity", "unitPriceIncVat", "discountIncVat", "vatRate", "costExVat"].includes(field) ? Number(value) : value;
     return { ...current, items: current.items.map((item, position) => position === index ? { ...item, [field]: updated } : field === "quantity" && parent.type === "tyre" && item.parentLineId === parent.lineId ? { ...item, quantity: updated } : item) };
   });
@@ -148,15 +141,16 @@ export default function Sales() {
     const retail = Number(product.retailIncVat || 0);
     const fallback = priceLevel === "special2Plus" ? Math.max(0, retail - 4.9992) : priceLevel === "xtra" ? retail * (retail <= 198 ? 0.92 : 0.96) : priceLevel === "supply" ? (Number(product.costExVat || 0) + 12) * 1.2 : retail;
     const lineId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const line = { lineId, type: product.category === "tyre" ? "tyre" : product.category === "space-saver" ? "roadhero" : product.category === "alloy" ? "alloy" : "part", description: product.description, stockNumber: product.sku, stockProductId: product.id, priceLevel, priceLevels: { retail: stockPrice(product, "retail"), special2Plus: stockPrice(product, "special2Plus"), xtra: stockPrice(product, "xtra"), supply: stockPrice(product, "supply") }, quantity: 1, unitPriceIncVat: Number(product[field] || fallback), discountIncVat: 0, vatRate: 20, costExVat: Number(product.costExVat || 0) };
+    const line = { lineId, type: product.category === "tyre" ? "tyre" : product.category === "space-saver" ? "roadhero" : product.category === "alloy" ? "alloy" : "part", description: itemDescription(product), ...(isTyre(product)?{...tyreData(product),runFlat:product.runFlat===true,extraLoad:product.extraLoad===true,homologation:product.homologation||"",vehicleType:product.vehicleType||""}:{}), stockNumber: product.sku||product.code, stockProductId: product.source==='oak'?'':product.id,source:product.source||'tyremen', priceLevel, priceLevels: { retail: stockPrice(product, "retail"), special2Plus: stockPrice(product, "special2Plus"), xtra: stockPrice(product, "xtra"), supply: stockPrice(product, "supply") }, quantity: 1, unitPriceIncVat: Number(product.priceLevels?.[priceLevel] ?? product[field] ?? fallback), discountIncVat: 0, vatRate: 20, costExVat: Number(product.costExVat || 0) };
     const codes = line.type === "tyre" ? priceLevel === "retail" ? ["CD", "WB", "TLV"] : ["special2Plus", "xtra"].includes(priceLevel) ? ["CD"] : [] : [];
     const missing = codes.filter((code) => !serviceMaster.some((service) => service.code?.toUpperCase() === code));
     if (missing.length) setMessage(`Set up ${missing.join(", ")} in Service Master before charging these tyre services. No zero-price extras were added.`);
-    const extras = codes.flatMap((code) => { const service = serviceMaster.find((item) => item.code?.toUpperCase() === code); return service ? [{ parentLineId: lineId, type: "service", description: service.name, stockNumber: service.code, serviceMasterId: service.id, quantity: 1, unitPriceIncVat: Number(service.retailIncVat || 0), vatRate: Number(service.vatRate ?? 20), discountIncVat: 0, costExVat: Number(service.costExVat || 0) }] : []; });
+    const extras = codes.flatMap((code) => { const service = serviceMaster.find((item) => item.code?.toUpperCase() === code); return service ? [{ parentLineId: lineId, type: "service", description: upper(service.name), stockNumber: service.code, serviceMasterId: service.id, quantity: 1, unitPriceIncVat: Number(service.retailIncVat || 0), vatRate: Number(service.vatRate ?? 20), discountIncVat: 0, costExVat: Number(service.costExVat || 0) }] : []; });
     setDraft((current) => ({ ...current, items: current.items.length === 1 && !current.items[0].description ? [line, ...extras] : [...current.items, line, ...extras] }));
-    setStockSearch("");
+
   };
   const stockPrice = (product, level) => {
+    if(product.priceLevels?.[level] !== undefined) return Number(product.priceLevels[level]);
     const retail = Number(product.retailIncVat || 0);
     if (level === "special2Plus") return Number(product.special2PlusIncVat || Math.max(0, retail - 4.9992));
     if (level === "xtra") return Number(product.xtraIncVat || retail * (retail <= 198 ? 0.92 : 0.96));
@@ -164,9 +158,9 @@ export default function Sales() {
     return retail;
   };
   const addServiceLine = (service) => {
-    const line = { type: service.category === "mot" ? "mot" : "service", description: service.name, stockNumber: service.code, serviceMasterId: service.id, quantity: 1, unitPriceIncVat: Number(service.retailIncVat || 0), discountIncVat: 0, vatRate: Number(service.vatRate ?? 20), costExVat: Number(service.costExVat || 0) };
+    const line = { type: service.category === "mot" ? "mot" : "service", description: upper(service.name), stockNumber: service.code, serviceMasterId: service.id, quantity: 1, unitPriceIncVat: Number(service.retailIncVat || 0), discountIncVat: 0, vatRate: Number(service.vatRate ?? 20), costExVat: Number(service.costExVat || 0) };
     setDraft((current) => ({ ...current, items: current.items.length === 1 && !current.items[0].description ? [line] : [...current.items, line] }));
-    setServiceSearch("");
+
   };
   const chooseCustomer = (customer) => {
     const toAccount = customer.customerType !== "account" || window.confirm("Charge this sale to the credit account? Choose Cancel for a paid retail sale.");
@@ -182,7 +176,7 @@ export default function Sales() {
     const original = current.items[index];
     const updated = { ...original, priceLevel: level, unitPriceIncVat: Number(original.priceLevels?.[level] ?? original.unitPriceIncVat) };
     const codes = original.type === "tyre" ? level === "retail" ? ["CD", "WB", "TLV"] : ["special2Plus", "xtra"].includes(level) ? ["CD"] : [] : [];
-    const extras = codes.flatMap((code) => { const service = serviceMaster.find((item) => item.code?.toUpperCase() === code); return service ? [{ parentLineId: updated.lineId, type: "service", description: service.name, stockNumber: code, serviceMasterId: service.id, quantity: updated.quantity, unitPriceIncVat: Number(service.retailIncVat || 0), vatRate: Number(service.vatRate ?? 20), discountIncVat: 0, costExVat: Number(service.costExVat || 0) }] : []; });
+    const extras = codes.flatMap((code) => { const service = serviceMaster.find((item) => item.code?.toUpperCase() === code); return service ? [{ parentLineId: updated.lineId, type: "service", description: upper(service.name), stockNumber: code, serviceMasterId: service.id, quantity: updated.quantity, unitPriceIncVat: Number(service.retailIncVat || 0), vatRate: Number(service.vatRate ?? 20), discountIncVat: 0, costExVat: Number(service.costExVat || 0) }] : []; });
     return { ...current, items: [...current.items.filter((line) => line.parentLineId !== original.lineId).map((line) => line === original ? updated : line), ...extras] };
   });
 
@@ -317,7 +311,7 @@ export default function Sales() {
           <div className="vrmLookup"><input placeholder="ENTER REG" value={draft.vehicle.registration} onChange={(e) => setVehicle("registration", e.target.value.toUpperCase())} /><button onClick={lookupVehicle} disabled={busy === "vehicle"}>{busy === "vehicle" ? "CHECKING…" : "LOAD VEHICLE"}</button><button type="button" onClick={() => navigator.clipboard?.writeText(draft.vehicle.registration)}>Copy registration</button></div>
           {storedVehicle && <button type="button" onClick={() => chooseStoredVehicle(storedVehicle)}>Use saved vehicle and linked customer</button>}
           <div className="salesFormGrid"><label>Make *<input value={draft.vehicle.make || ""} onChange={(e) => setVehicle("make", e.target.value)} /></label><label>Model *<input value={draft.vehicle.model || ""} onChange={(e) => setVehicle("model", e.target.value)} /></label><label>Engine cc<input value={draft.vehicle.engineCC || ""} onChange={(e) => setVehicle("engineCC", e.target.value)} /></label><label>Mileage<input type="number" value={draft.vehicle.mileage || ""} onChange={(e) => setVehicle("mileage", e.target.value)} /></label><label>VIN<input value={draft.vehicle.vin || ""} onChange={(e) => setVehicle("vin", e.target.value)} /></label><label>MOT due<input value={draft.vehicle.motDue || ""} onChange={(e) => setVehicle("motDue", e.target.value)} /></label></div>
-          {!!vehicleHistory.length && <details><summary>Sales history for this registration ({vehicleHistory.length})</summary>{vehicleHistory.map((entry) => <p key={entry.id}>{entry.invoiceNumber} · {entry.customer?.name} · £{money(entry.total)} · {entry.items?.map((item) => item.description).join(", ")}</p>)}</details>}
+          {!!vehicleHistory.length && <details><summary>Sales history for this registration ({vehicleHistory.length})</summary>{vehicleHistory.map((entry) => <p key={entry.id}>{entry.invoiceNumber} · {entry.customer?.name} · £{money(entry.total)} · {entry.items?.filter(isTyre).map((item,i)=><TyreBrandLogo key={i} line={item}/>)} {entry.items?.map((item) => itemDescription(item,isTyre(item))).join(" · ")}</p>)}</details>}
         </div>
         <div className="adminPanel" id="sale-section-customer">
           <div className="adminEditHeader"><div><h3>Customer</h3><p>Retail, trade or approved account customer.</p></div><select value={draft.customer.customerType} onChange={(e) => setCustomer("customerType", e.target.value)}><option value="retail">Retail</option><option value="trade">Trade</option><option value="account">Account</option></select></div>
@@ -343,16 +337,11 @@ export default function Sales() {
 
         <div className="adminPanel" id="sale-section-items">
           <div className="adminEditHeader"><div><h3>Sale lines</h3><p>Customer-facing prices are entered including VAT.</p></div><button onClick={() => setDraft((current) => ({ ...current, items: [...current.items, blankItem()] }))}>+ Add line</button></div>
-          <div className="salesStockPicker">
-            <label>Search stock<input placeholder="Stock number, tyre size, brand or description…" value={stockSearch} onChange={(event) => setStockSearch(event.target.value)} /></label>
-            {matchingStock.length > 0 && <div className="salesStockMatches">{matchingStock.map((product) => <article key={product.id}><div><b>{product.sku}</b><span>{product.description}</span><small>Stock {Number(product.stockQty || 0)} · Cost £{Number(product.costExVat || 0).toFixed(2)} ex VAT</small></div><div className="stockPriceButtons"><button onClick={() => addStockLine(product, "retail")}>Retail<br/>£{stockPrice(product, "retail").toFixed(2)}</button><button onClick={() => addStockLine(product, "special2Plus")}>2+ Special<br/>£{stockPrice(product, "special2Plus").toFixed(2)}</button><button onClick={() => addStockLine(product, "xtra")}>Xtra<br/>£{stockPrice(product, "xtra").toFixed(2)}</button><button onClick={() => addStockLine(product, "supply")}>Supply<br/>£{stockPrice(product, "supply").toFixed(2)}</button></div></article>)}</div>}
-          </div>
-          <div className="salesStockPicker servicePicker">
-            <label>Search Service Master<input placeholder="MOT, service, alignment, puncture, diagnostics…" value={serviceSearch} onChange={(event) => setServiceSearch(event.target.value)} /></label>
-            {matchingServices.length > 0 && <div className="salesStockMatches">{matchingServices.map((service) => <article key={service.id}><div><b>{service.code}</b><span>{service.name}</span><small>{service.category} · VAT {Number(service.vatRate ?? 20)}%</small></div><div className="stockPriceButtons single"><button onClick={() => addServiceLine(service)}>Add<br/>£{Number(service.retailIncVat || 0).toFixed(2)}</button></div></article>)}</div>}
-          </div>
+          <button type="button" className="itemSearchToggle" onClick={()=>setItemSearchOpen(v=>!v)}>+ Add tyre / service / part — search stock</button>
+          {itemSearchOpen && <ItemSearch stockProducts={stockProducts} serviceMaster={serviceMaster} onClose={()=>setItemSearchOpen(false)} onSelect={(p,kind,level)=>kind==='service'?addServiceLine(p):addStockLine(p,level)}/>}
           <div className="salesLineWorkspace"><div className="salesLineHead"><span>Description</span><span>Type</span><span>Stock no.</span><span>Qty</span><span>Unit inc VAT</span><span>Discount</span><span>VAT</span><span></span></div>
           {draft.items.map((item, index) => <div className="salesLine" key={index}>
+            {isTyre(item)&&<div className="tyreLineSummary"><TyreBrandLogo line={item}/><strong>{itemDescription(item,true)}</strong></div>}
             <WheelPositionPicker line={item} onChange={positions => setItem(index, "positions", positions)} />
             <input value={item.description} onChange={(e) => setItem(index, "description", e.target.value)} placeholder="Tyre, service, MOT, repair…" />
             <select value={item.type} onChange={(e) => setItem(index, "type", e.target.value)}><option value="tyre">Tyre</option><option value="service">Service / repair</option><option value="mot">MOT</option><option value="part">Part</option><option value="roadhero">Space saver</option><option value="alloy">Alloy wheel</option></select>

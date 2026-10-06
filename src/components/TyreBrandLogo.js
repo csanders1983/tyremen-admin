@@ -1,0 +1,4 @@
+import {useState,useEffect} from 'react';
+import {tyreData} from '../lib/tyrePresentation';
+import bundled from '../lib/tyreBrandAssets';
+export default function TyreBrandLogo({line={},className=''}){const data=tyreData(line),backup=bundled[data.brand.replace(/[^A-Z0-9]/g,'')], [failed,setFailed]=useState(false),[fallback,setFallback]=useState(false);useEffect(()=>{setFailed(false);setFallback(false)},[data.brandLogo,data.brand]);const src=fallback?backup:(backup||data.brandLogo);return src&&!failed?<img className={`tyreBrandLogo ${className}`} src={src} alt={`${data.brand||'Tyre'} brand logo`} onError={()=>{if(backup&&!fallback)setFallback(true);else setFailed(true)}}/>:<span className={`tyreBrandMissing ${className}`} title="Brand logo is missing; add a Brand Logo URL in stock master">{data.brand||'TYRE'}<small>LOGO UNAVAILABLE</small></span>;}

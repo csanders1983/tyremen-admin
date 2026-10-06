@@ -1,3 +1,6 @@
+import ItemSearch, {stockLevelPrice,PRICE_LEVELS} from '../components/ItemSearch';
+import TyreBrandLogo from '../components/TyreBrandLogo';
+import {itemDescription,tyreData,upper,isTyre} from '../lib/tyrePresentation';
 import "../admin-pages.css";
 import "../tyre-foreman.css";
 import TechnicianPicker from "../components/TechnicianPicker";
@@ -46,6 +49,9 @@ export default function Orders() {
   const [, setTechnicians] = useState([]);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [itemSearch,setItemSearch]=useState(null);
+  const [serviceMaster,setServiceMaster]=useState([]);
+  useEffect(()=>onSnapshot(collection(db,"serviceMaster"),snapshot=>setServiceMaster(snapshot.docs.map(d=>({id:d.id,...d.data()})))),[]);
 
   useEffect(() => {
     if (!linkedJobId || openedJobId.current === linkedJobId) return;
@@ -137,7 +143,7 @@ useEffect(() => {
     }));
   };
 
-  const addItem = (type = "service") => {
+  const addBlankItem = (type = "service") => {
     const items = selected.items || [];
 
     setSelected({
@@ -156,8 +162,23 @@ useEffect(() => {
     });
   };
 
+  const addItem = type => setItemSearch(type === 'labour' ? 'labour' : type === 'part' ? 'part' : type === 'tyre' ? 'tyre' : 'service');
+  const tyreExtras = (line, level) => {
+    const codes=level==='retail'?['CD','WB','TLV']:['special2Plus','xtra'].includes(level)?['CD']:[];
+    const missing=codes.filter(code=>!serviceMaster.some(s=>upper(s.code)===code));
+    if(missing.length)setMessage(`Set up ${missing.join(', ')} in Service Master. Missing charges were not invented.`);
+    return codes.flatMap(code=>{const service=serviceMaster.find(s=>upper(s.code)===code);return service?[{type:'service',name:upper(service.name),stockNumber:code,serviceMasterId:service.id,parentLineId:line.lineId,qty:line.qty,price:Number(service.retailIncVat||0),cost:Number(service.costExVat||0),vatRate:Number(service.vatRate??20)}]:[];});
+  };
+  const addSearchItem = (product,kind,level) => {
+    const tyre=kind==='stock'&&isTyre(product),line={type:tyre?'tyre':kind==='service'&&product.category==='mot'?'mot':kind==='stock'?'part':'service',name:itemDescription(product),stockNumber:product.sku||product.code||'',stockProductId:kind==='stock'&&product.source!=='oak'?product.id:'',serviceMasterId:kind==='service'?product.id:'',source:product.source||'tyremen',qty:1,price:kind==='service'?Number(product.retailIncVat||0):stockLevelPrice(product,level),cost:Number(product.costExVat||0),costExVat:Number(product.costExVat||0),vatRate:Number(product.vatRate??20),priceLevel:level,positions:[],lineId:window.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}`,...(tyre?{...tyreData(product),runFlat:product.runFlat===true,extraLoad:product.extraLoad===true,homologation:product.homologation||'',vehicleType:product.vehicleType||'',priceLevels:Object.fromEntries(PRICE_LEVELS.map(([key])=>[key,stockLevelPrice(product,key)]))}:{})};
+    const extras=tyre?tyreExtras(line,level):[];
+    setSelected(current=>({...current,items:[...(current.items||[]),line,...extras]}));
+    setMessage('Item added. Complete wheel positions for tyres, repairs and TPMS before invoicing.');
+  };
+  const changeItemPriceLevel = (index,level) => {const old=selected.items[index],line={...old,priceLevel:level,price:Number(old.priceLevels?.[level]??old.price)},extras=tyreExtras(line,level);setSelected(current=>({...current,items:[...current.items.filter(l=>l.parentLineId!==old.lineId).map((l)=>l===old?line:l),...extras]}));};
   const updateItem = (index, field, value) => {
-    const items = [...(selected.items || [])];
+    if(["name","description"].includes(field)) value=upper(value);
+    const items = [...(selected.items || [])].map(line => field === "qty" && line.parentLineId && line.parentLineId === selected.items[index].lineId ? {...line, qty: value} : line);
 
     items[index] = {
       ...items[index],
@@ -172,7 +193,9 @@ useEffect(() => {
 
   const removeItem = (index) => {
     const items = [...(selected.items || [])];
+    const parent = items[index].lineId;
     items.splice(index, 1);
+    if(parent) for(let i=items.length-1;i>=0;i--) if(items[i].parentLineId===parent) items.splice(i,1);
 
     setSelected({
       ...selected,
@@ -196,7 +219,7 @@ useEffect(() => {
     paymentTerms: selected.paymentTerms || "Due on completion",
     price: Number(calculatedTotal || 0),
     total: Number(calculatedTotal || 0),
-    items: selected.items || [],
+    items: (selected.items || []).map(item=>({...item,name:itemDescription(item),description:upper(item.description||item.name)})),
     tyres: (selected.items || []).filter((item) => item.type === "tyre"),
     updatedAt: new Date().toISOString(),
   });
@@ -235,9 +258,9 @@ useEffect(() => {
         : Math.max(0, Number(proportional.toFixed(2)));
       allocated += discountIncVat;
       return {
-        positions: item.positions || [], brand: item.brand || "", pattern: item.pattern || "", size: item.size || "", loadSpeed: item.loadSpeed || "", stockProductId: item.stockProductId || "",
+        ...tyreData(item), runFlat:item.runFlat===true,extraLoad:item.extraLoad===true,homologation:item.homologation||"",positions: item.positions || [], brand: item.brand || "", pattern: item.pattern || "", size: item.size || "", loadSpeed: item.loadSpeed || "", stockProductId: item.stockProductId || "",
         type: item.type || "service",
-        description: item.name || item.description || item.service || "Workshop work",
+        description: itemDescription(item),
         stockNumber: item.stockNumber || item.code || item.sku || "",
         quantity: Math.max(1, Number(item.qty || item.quantity || 1)),
         unitPriceIncVat: gross > 0
@@ -466,7 +489,7 @@ Total: £${calculatedTotal.toFixed(2)}
                 >
                   <div className="adminReg">{job.registration || "NO REG"}</div>
                   <h4>{job.name || "No name"}</h4>
-                  <p>{job.service || "Service"}</p>
+                  <p>{job.items?.length?job.items.map(line=>itemDescription(line,isTyre(line))).join(" · "):String(job.service||"Service").toUpperCase()}</p>{(job.items||job.tyres||[]).filter(isTyre).map((line,i)=><TyreBrandLogo key={i} line={line}/>)}
                   <p>
                     {job.date || "No date"} | {job.time || "No time"}
                   </p>
@@ -649,6 +672,8 @@ Total: £${calculatedTotal.toFixed(2)}
                 </div>
               </div>
 
+              {itemSearch && <ItemSearch initialCategory={itemSearch==='labour'?'all':itemSearch} serviceMaster={serviceMaster} onClose={()=>setItemSearch(null)} onSelect={addSearchItem}/>}
+              {itemSearch && <button type="button" onClick={()=>addBlankItem(['tyre','labour','part'].includes(itemSearch)?itemSearch:'service')}>Add manual line instead</button>}
               {(selected.items || []).map((item, index) => {
                 const lineTotal =
                   Number(item.qty || 0) * Number(item.price || 0);
@@ -659,9 +684,7 @@ Total: £${calculatedTotal.toFixed(2)}
 
                 return (
                   <div className="adminItemEditor" key={index}>
-                    {item.image && (
-                      <img src={item.image} alt={item.name || "Tyre"} />
-                    )}
+                    {isTyre(item) && <div className="tyreLineSummary"><TyreBrandLogo line={item}/><strong>{itemDescription(item,true)}</strong></div>}
 
                     <div className="adminItemInputs">
                       <WheelPositionPicker line={item} onChange={positions => updateItem(index, "positions", positions)} />
@@ -687,7 +710,7 @@ Total: £${calculatedTotal.toFixed(2)}
                           updateItem(index, "type", e.target.value)
                         }
                       >
-                        <option value="service">Service</option>
+                        <option value="service">Service</option><option value="mot">MOT</option>
                         <option value="tyre">Tyre</option>
                         <option value="labour">Labour</option>
                         <option value="part">Part</option>
@@ -722,6 +745,7 @@ Total: £${calculatedTotal.toFixed(2)}
                     </div>
 
                     <div className="adminItemTotals">
+                      {item.priceLevels && <label>Price level<select aria-label="Order tyre price level" value={item.priceLevel||'retail'} onChange={e=>changeItemPriceLevel(index,e.target.value)}>{PRICE_LEVELS.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>}
                       <strong>£{lineTotal.toFixed(2)}</strong>
                       <small>Profit £{profit.toFixed(2)}</small>
                       <button
