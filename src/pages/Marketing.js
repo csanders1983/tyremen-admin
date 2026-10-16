@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { workshopPost } from '../lib/workshopApi';
 import { headers, parseCsv, csv, download, pdfDownload, contactRows, blankContact, monthValue, localDateTime, drawArtwork } from '../lib/marketingTools';
 import '../marketing.css';
-const tabs = [['overview', 'Overview'], ['mot', 'MOT reminders'], ['letters', 'Letters'], ['campaigns', 'Campaigns'], ['insights', 'Business insights'], ['social', 'Social studio'], ['offers', 'Offers'], ['archive', 'Archives & opt-outs'], ['settings', 'Settings']];
+const tabs = [['overview', 'Overview'], ['mot', 'MOT reminders'], ['letters', 'Letters'], ['attention', 'Needs attention'], ['campaigns', 'Campaigns'], ['insights', 'Business insights'], ['social', 'Social studio'], ['offers', 'Offers'], ['archive', 'Archives & opt-outs'], ['settings', 'Settings']];
 const empty = {
   contacts: [],
   messages: [],
@@ -13,6 +13,7 @@ const empty = {
   social: [],
   batches: [],
   cycles: [],
+  issues: [],
   staff: [],
   connections: {},
   settings: {
@@ -119,6 +120,7 @@ export default function Marketing() {
     [historyStatus, setHistoryStatus] = useState('all'),
     [historyFrom, setHistoryFrom] = useState(''),
     [historyTo, setHistoryTo] = useState('');
+  const [issueEditor,setIssueEditor]=useState(null),[issueStatus,setIssueStatus]=useState('pending');
   const canvas = useRef(null);
   const call = (action, body = {}) => workshopPost('marketingAdmin', {
     action,
@@ -219,38 +221,55 @@ export default function Marketing() {
     try {
       const file = e.target.files[0];
       if (!file) return;
-      setImportRows(parseCsv(await file.text()));
+      const rows=parseCsv(await file.text());
+      setImportRows(rows);
       setImportCheck(null);
+      await checkImport(rows);
     } catch (e) {
       setError(e.message);
     }
   }
-  async function checkImport() {
+  async function checkImport(input = importRows) {
+    const rows=Array.isArray(input)?input:importRows;
+    if(!rows?.length)return;
     return run('import-check', async () => {
       const results = [];
-      for (let i = 0; i < importRows.length; i += 100) {
+      for (let i = 0; i < rows.length; i += 100) {
         const r = await call('import', {
           mode: importMode,
-          rows: importRows.slice(i, i + 100),
+          rows: rows.slice(i, i + 100),
           preview: true
         });
         results.push(...r.rows.map(v => ({
           ...v,
-          row: v.row + i
+          row: v.row + i + 1 // CSV header occupies spreadsheet row 1.
         })));
       }
       setImportCheck(results);
     }, false);
   }
+  function downloadImportIssues() {
+    const issues = (importCheck || []).filter(r => r.error);
+    if (!issues.length) return;
+    const columns = [...new Set(issues.flatMap(r => Object.keys(importRows[r.row - 2] || {})))];
+    download('tyremen-contacts-to-check.csv', csv(['Spreadsheet Row', ...columns, 'Issue'], issues.map(r => [r.row, ...columns.map(k => importRows[r.row - 2]?.[k] || ''), r.error])));
+  }
   async function commitImport() {
+    const checked = (importCheck || []).filter(r => !r.error);
+    const validRows = checked.map(r => importRows[r.row - 2]);
+    const invalidCount = (importCheck || []).filter(r => r.error).length;
     await run('import', async () => {
-      for (let i = 0; i < importRows.length; i += 100) await call('import', {
+      const problemRows=(importCheck || []).filter(r=>r.error).map(r=>({row:r.row,values:importRows[r.row-2]}));
+      for(let i=0;i<problemRows.length;i+=100)await call('saveImportIssues',{mode:importMode,rows:problemRows.slice(i,i+100)});
+      for (let i = 0; i < validRows.length; i += 100) await call('import', {
         mode: importMode,
-        rows: importRows.slice(i, i + 100)
+        rows: validRows.slice(i, i + 100)
       });
+      if (invalidCount) setTab('attention');
       setShowImport(false);
       setImportRows(null);
-      setNotice('Import complete. Reimporting does not reactivate an opted-out contact.');
+      setImportCheck(null);
+      setNotice(`Imported ${validRows.length} contacts.${invalidCount ? ' ' + invalidCount + ' rows saved in Needs attention. Correct and retry them there.' : ''} Existing opt-outs stay blocked.`);
     });
   }
   async function seePreview(c, kind = 'motMonth', template = null) {
@@ -412,7 +431,7 @@ export default function Marketing() {
                       confirm: 'DELETE'
                     }));
                   }}>Delete</button>}</div></td></tr>)}</tbody></table>{!contacts.length && <div className="mkEmpty">No matching contacts. Import a CSV or add a contact.</div>}{contacts.length > 300 && <p className="mkMuted">Showing 300 rows. Narrow your search; exports include the full filtered selection.</p>}</div></div></>;
-  return <section className="marketingWorkspace"><header className="mkHeading"><div><span className="mkEyebrow">TYREMEN · CUSTOMER GROWTH</span><h2>Marketing</h2><p>Reminders, relationships and reasons to come back.</p></div><div className="mkActions"><Tag state={config?.enabled ? 'active' : 'paused'}>{config?.enabled ? 'Automation on' : 'Automation paused'}</Tag><button disabled={!!busy} onClick={() => run('refresh', refresh, false)}>Refresh</button></div></header><nav className="mkTabs">{tabs.map(([key, label]) => <button key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>)}</nav>{notice && <div className="mkNotice" role="status">{notice}</div>}{error && <div className="mkError" role="alert">{error}</div>}{busy && <div className="mkBusy" role="status">Working · {busy}…</div>}{loading && <div className="mkEmpty">Opening Marketing…</div>}
+  return <section className="marketingWorkspace"><header className="mkHeading"><div><span className="mkEyebrow">TYREMEN · CUSTOMER GROWTH</span><h2>Marketing</h2><p>Reminders, relationships and reasons to come back.</p></div><div className="mkActions"><Tag state={config?.enabled ? 'active' : 'paused'}>{config?.enabled ? 'Automation on' : 'Automation paused'}</Tag><button disabled={!!busy} onClick={() => run('refresh', refresh, false)}>Refresh</button></div></header><nav className="mkTabs">{tabs.map(([key, label]) => <button key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}{key==='attention' && (data.issues || []).some(i=>i.status==='pending') ? ' ('+(data.issues || []).filter(i=>i.status==='pending').length+')' : ''}</button>)}</nav>{notice && <div className="mkNotice" role="status">{notice}</div>}{error && <div className="mkError" role="alert">{error}</div>}{busy && <div className="mkBusy" role="status">Working · {busy}…</div>}{loading && <div className="mkEmpty">Opening Marketing…</div>}
  {!loading && config && <>
  {tab === 'overview' && <><div className="mkMetricGrid">{[['Active reminder contacts', active.length, 'Retained annual records'], ['Booked', booked.length, 'MOT reminders suppressed'], ['Accepted / delivered', sent.length, 'Last 30 days'], ['Opt-outs retained', optouts.length, 'Never automatically deleted']].map(([label, note, sub]) => <div className="mkMetric" key={label}><span>{label}</span><b>{note}</b><small>{sub}</small></div>)}</div><div className="mkOverviewGrid"><div className="mkPanel"><div className="mkPanelHeading"><h3>The reminder journey</h3><button onClick={() => setTab('settings')}>Manage automation →</button></div>{[['One calendar month before', 'MOT reminder, with your selected offers.'], ['15 days before', 'Email and text the responsible staff member to check bookings.'], ['14 days before', 'Two-week MOT follow-up, excluding booked and opted-out contacts.'], ['Booking linked', 'Move to appointment reminders using the live diary arrival time.'], ['24 hours before arrival', 'Send the appointment reminder. Changed or cancelled bookings are rechecked.'], ['Next year', 'Keep history; roll the date forward and verify the new MOT date.']].map(([label, desc], i) => <div className="mkJourney" key={label}><i>{i + 1}</i><div><b>{label}</b><p>{desc}</p></div></div>)}</div><aside className="mkPanel"><h3>What needs attention</h3><button className="mkAttention" onClick={() => {
               setTab('mot');
@@ -689,10 +708,12 @@ export default function Marketing() {
               id: s.id,
               enabled: e.target.checked
             }))} /></label>)}</div>}</>}
+ {tab==='attention' && <div className="mkPanel"><div className="mkPanelHeading"><div><h3>Needs attention</h3><small>Valid contacts import normally. These original rows are kept here until corrected or dismissed.</small></div><select aria-label="Import issue status" value={issueStatus} onChange={e=>setIssueStatus(e.target.value)}><option value="pending">Needs attention</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option><option value="all">All rows</option></select></div><input aria-label="Search import issues" placeholder="Customer, registration or number…" value={search} onChange={e=>setSearch(e.target.value)}/><div className="mkTable"><table><thead><tr><th>CSV row</th><th>Original details</th><th>What needs checking</th><th>Status</th><th>Action</th></tr></thead><tbody>{(data.issues || []).filter(i=>issueStatus==='all'||i.status===issueStatus).filter(i=>Object.values(i.values || {}).join(' ').toLowerCase().includes(search.toLowerCase())).map(i=><tr key={i.id}><td>{i.sourceRow}</td><td>{Object.entries(i.values || {}).filter(([,v])=>v).map(([k,v])=><small key={k}><b>{k}:</b> {v}</small>)}</td><td>{i.error || 'Imported successfully'}</td><td><Tag state={i.status==='resolved'?'active':'paused'}>{i.status}</Tag></td><td><div className="mkActions">{['pending','dismissed'].includes(i.status) && <button onClick={()=>setIssueEditor({...i,values:{...i.values}})}>Correct & retry</button>}{i.status==='pending' && <button onClick={()=>run('dismiss row',()=>call('dismissImportIssue',{id:i.id}))}>Dismiss</button>}</div></td></tr>)}</tbody></table>{!(data.issues || []).some(i=>issueStatus==='all'||i.status===issueStatus) && <div className="mkEmpty">No rows in this view.</div>}</div></div>}
+ {issueEditor && <div className="mkModal"><form className="mkModalBody" onSubmit={async e=>{e.preventDefault();const result=await run('retry import',()=>call('retryImportIssue',{id:issueEditor.id,values:issueEditor.values}));if(result){setIssueEditor(null);setNotice('Corrected contact imported. Original row retained in Resolved.');}}}><div className="mkPanelHeading"><h3>Correct CSV row {issueEditor.sourceRow}</h3><button type="button" onClick={()=>setIssueEditor(null)}>Close</button></div><p className="mkMuted">{issueEditor.error}</p><div className="mkFormGrid">{Object.entries(issueEditor.values || {}).map(([key,value])=><Field key={key} label={key}><input value={value} onChange={e=>setIssueEditor({...issueEditor,values:{...issueEditor.values,[key]:e.target.value}})}/></Field>)}</div><button className="mkPrimary" disabled={!!busy}>Save & import contact</button></form></div>}
  {showImport && <div className="mkModal"><section className="mkModalBody"><div className="mkPanelHeading"><h3>Import contacts</h3><button onClick={() => setShowImport(false)}>Close</button></div><Field label="Import type"><select value={importMode} onChange={e => {
               setImportMode(e.target.value);
               setImportCheck(null);
-            }}><option value="digital">MOT text / email reminders</option><option value="letter">Postal letters</option><option value="campaign">Email / SMS campaign contacts</option></select></Field><p className="mkMuted">{importMode === 'digital' ? 'Mandatory: Due Date and Mobile. Name and Registration Number are optional. Email is needed for email reminders.' : importMode === 'letter' ? 'Required: Name, Address, MOT Due Date, Vehicle Make and Vehicle Model.' : 'At least Email or Mobile is required. Permission is recorded separately.'}</p><button onClick={() => download('tyremen-' + importMode + '-template.csv', csv(headers[importMode], []))}>Download CSV headers</button><Field label="CSV file"><input type="file" accept=".csv,text/csv" onChange={fileImport} /></Field>{importRows && <p>{importRows.length} rows loaded.</p>}<div className="mkActions"><button disabled={!importRows?.length || !!busy} onClick={checkImport}>Validate all rows</button><button className="mkPrimary" disabled={!importCheck || importCheck.some(r => r.error) || !!busy} onClick={commitImport}>Import validated rows</button></div>{importCheck && <div className="mkImportResults">{importCheck.filter(r => r.error).map(r => <p key={r.row}>Row {r.row}: {r.error}</p>)}{!importCheck.some(r => r.error) && <p>All {importCheck.length} rows are valid. Imported contacts start with unknown permission; existing opt-outs stay blocked.</p>}</div>}</section></div>}
+            }}><option value="digital">MOT text / email reminders</option><option value="letter">Postal letters</option><option value="campaign">Email / SMS campaign contacts</option></select></Field><p className="mkMuted">{importMode === 'digital' ? 'Mandatory: Due Date and Mobile. Name and Registration Number are optional. Email is needed for email reminders.' : importMode === 'letter' ? 'Required: Name, Address, MOT Due Date, Vehicle Make and Vehicle Model.' : 'At least Email or Mobile is required. Permission is recorded separately.'}</p><button onClick={() => download('tyremen-' + importMode + '-template.csv', csv(headers[importMode], []))}>Download CSV headers</button><Field label="CSV file"><input type="file" accept=".csv,text/csv" onChange={fileImport} /></Field>{importRows && <p>{importRows.length} rows loaded.</p>}<div className="mkActions"><button disabled={!importRows?.length || !!busy} onClick={checkImport}>Recheck file</button><button className="mkPrimary" disabled={!importCheck?.length || !!busy} onClick={commitImport}>Import contacts & keep problem rows</button></div>{importCheck && <div className="mkImportResults"><p>{importCheck.filter(r => !r.error).length} ready to import · {importCheck.filter(r => r.error).length} need checking. Recognisable UK numbers are formatted automatically.</p>{importCheck.some(r => r.error) && <button type="button" onClick={downloadImportIssues}>Download rows to check</button>}{importCheck.filter(r => r.error).map(r => <p key={r.row}>Row {r.row}: {r.error}</p>)}{!importCheck.some(r => r.error) && <p>All {importCheck.length} rows are valid. Imported contacts start with unknown permission; existing opt-outs stay blocked.</p>}</div>}</section></div>}
  {editor && <div className="mkModal"><form className="mkModalBody" onSubmit={editSave}><div className="mkPanelHeading"><h3>{editor.id ? 'Edit contact' : 'Add contact'}</h3><button type="button" onClick={() => setEditor(null)}>Close</button></div><Field label="Record type"><select value={editor.recordType || 'digital'} onChange={e => setEditor({
               ...editor,
               recordType: e.target.value
