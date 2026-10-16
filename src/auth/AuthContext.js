@@ -63,7 +63,7 @@ export function AuthProvider({ children }) {
       profile,
       role,
       loading,
-      can: (permission) => (ROLE_ACCESS[role] || []).includes(permission),
+      can: (permission) => permission === "marketing" ? ["owner", "manager"].includes(role) || profile?.marketingAccess === true : (ROLE_ACCESS[role] || []).includes(permission),
       signOut: () => signOut(auth),
     };
   }, [user, profile, loading]);

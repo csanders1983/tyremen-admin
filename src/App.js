@@ -17,6 +17,7 @@ import LegacyImport from "./pages/LegacyImport";
 import Directory from "./pages/Directory";
 import TyreForeman from "./pages/TyreForeman";
 import WorkshopBoard from "./pages/WorkshopBoard";
+import Marketing from "./pages/Marketing";
 
 function AdminHome() {
   const { role } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="directory" element={<RequireAuth permission="sales"><Directory /></RequireAuth>} />
           <Route path="legacy-import" element={<RequireAuth permission="sales"><LegacyImport /></RequireAuth>} />
           <Route path="pages" element={<RequireAuth permission="pages"><PagesEditor /></RequireAuth>} />
+          <Route path="marketing" element={<RequireAuth permission="marketing"><Marketing /></RequireAuth>} />
           <Route path="settings" element={<RequireAuth permission="settings"><Settings /></RequireAuth>} />
           <Route path="pricing-control" element={<RequireAuth permission="pricing"><PricingControl /></RequireAuth>} />
           <Route path="very-cheap-tyres" element={<RequireAuth permission="vct"><VctCommerce /></RequireAuth>} />
