@@ -6,7 +6,7 @@ import SystemIcon from "./SystemIcon";
 const groups = [
   ["Workspace", [["/", "Overview", "dashboard", "home"], ["/calendar", "Booking diary", "calendar", "calendar"], ["/workshop", "Workshop live", "workshop", "workshop"], ["/tyre-foreman", "Tyre bay live", "tyreForeman", "workshop"], ["/orders", "Jobs & completion", "jobs", "jobs"]]],
   ["Sales & customers", [["/sales", "Sales & invoices", "sales", "sales"], ["/directory", "Customers & vehicles", "sales", "people"], ["/marketing", "Marketing", "marketing", "people"], ["/tyres", "Stock & services", "stock", "stock"]]],
-  ["Management", [["/pricing-control", "Pricing & capacity", "pricing", "pricing"], ["/pages", "Website pages", "pages", "pages"], ["/very-cheap-tyres", "Very Cheap Tyres", "vct", "stock"], ["/users", "Staff access", "users", "people"], ["/settings", "Settings", "settings", "settings"]]],
+  ["Management", [["/hr", "People & HR", "hr", "people"], ["/document-templates", "Document templates", "templates", "pages"], ["/staff", "My staff portal", null, "people"], ["/pricing-control", "Pricing & capacity", "pricing", "pricing"], ["/pages", "Website pages", "pages", "pages"], ["/very-cheap-tyres", "Very Cheap Tyres", "vct", "stock"], ["/users", "Staff access", "users", "people"], ["/settings", "Settings", "settings", "settings"]]],
 ];
 export default function AdminLayout() {
   const { profile, role, can, signOut } = useAuth();
@@ -28,7 +28,7 @@ export default function AdminLayout() {
     <aside id="system-sidebar" className={`adminSidebar ${menuOpen ? "sysNavOpen" : ""}`}>
       <Link className="sysBrand" to="/"><b>TYREMEN</b><span>WORKSPACE <i>HULL</i></span></Link>
       <nav className="adminNav" aria-label="Main navigation">{groups.map(([label, items]) => {
-        const allowed = items.filter(([, , permission]) => can(permission));
+        const allowed = items.filter(([, , permission]) => permission === null || can(permission));
         return allowed.length > 0 && <div className="sysNavGroup" key={label}><span>{label}</span>{allowed.map(([url, text, , icon]) => <NavLink end={url === "/"} to={url} key={url}><SystemIcon name={icon} /><span>{text}</span></NavLink>)}</div>;
       })}</nav>
       <div className="sysSidebarFooter"><b>Tyremen Ltd</b><span>Witty Street · Hull</span><small>{ROLE_LABELS[role] || role} access</small></div>
