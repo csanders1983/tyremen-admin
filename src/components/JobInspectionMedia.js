@@ -35,9 +35,9 @@ export default function JobInspectionMedia({ job, onClose }) {
   const [inspection, setInspection] = useState(job.inspection || {});
   const [customer, setCustomer] = useState({});
   const [files, setFiles] = useState([]);
-  const [customerVisible, setCustomerVisible] = useState(true);
+  const [customerVisible, setCustomerVisible] = useState(false);
   const [note, setNote] = useState("");
-  const [noteVisible, setNoteVisible] = useState(true);
+  const [noteVisible, setNoteVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("");
