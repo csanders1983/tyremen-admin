@@ -13,9 +13,48 @@ const defaultRules = {
   tradePricing: { twoPlusDiscountExVat: 4.166, xtraThresholdIncVat: 198, xtraDiscountBelowPercent: 8, xtraDiscountAbovePercent: 4, supplyMarkupExVat: 12 },
 };
 const defaultOffers = {
-  buyTwoTyres: { active: true, minimumQuantity: 2, discountType: "fixedPerTyre", discountAmount: 5, discountPercent: 0, headline: "Buy 2 tyres, save £5 per tyre" },
-  serviceMot: { active: true, addOnPrice: 20, headline: "Service + MOT offer" },
-  tyreWorkshop: { active: true, minimumQuantity: 2, twoWheelPrice: 35.95, fourWheelPrice: 95, fuelCredit: 20, tyreOnlyAlignmentDiscount: 10 },
+  buyTwoTyres: {
+    active: true,
+    minimumQuantity: 2,
+    discountType: "fixedPerTyre",
+    discountAmount: 5,
+    discountPercent: 0,
+    headline: "Buy 2 tyres, save £5 per tyre",
+  },
+  serviceMot: {
+    active: true,
+    addOnPrice: 20,
+    headline: "Service + MOT offer",
+    stackWithTyres: true,
+    stackWithWorkshop: true,
+  },
+  tyreWorkshop: {
+    active: true,
+    minimumQuantity: 2,
+    eligibility: "motOrService",
+    twoWheelPrice: 35.95,
+    fourWheelPrice: 95,
+    stackWithTyreDiscount: true,
+    stackWithServiceMot: true,
+    tyreOnlyAlignment: {
+      active: true,
+      discount: 10,
+      label: "£10 off 2-wheel alignment",
+    },
+    freeTwoWheel: {
+      active: true,
+      label: "Free 2-wheel alignment",
+    },
+    fourWheelForTwo: {
+      active: true,
+      label: "4-wheel alignment for the 2-wheel price",
+    },
+    fuelCreditOffer: {
+      active: true,
+      amount: 20,
+      label: "£20 fuel credit",
+    },
+  },
 };
 const defaultVanOil = { includedLitres: 4, estimatedVanLitres: 8, extraPerLitreIncVat: 15 };
 const engineBands = [[0, 1200, "0-1200cc"], [1201, 1500, "1201-1500cc"], [1501, 2000, "1501-2000cc"], [2001, 2400, "2001-2400cc"], [2401, 3500, "2401-3500cc"], [3501, 9999, "3501cc+"]];
@@ -42,7 +81,49 @@ export default function PricingControl() {
     const stops = [
       onSnapshot(doc(db, "pricingControl", "aircon"), (snap) => snap.exists() && setAircon({ ...defaultAircon, ...snap.data() })),
       onSnapshot(doc(db, "pricingControl", "tyres"), (snap) => snap.exists() && setRules({ ...defaultRules, ...snap.data(), overrides: snap.data().overrides || [], tradePricing: { ...defaultRules.tradePricing, ...(snap.data().tradePricing || {}) } })),
-      onSnapshot(doc(db, "pricingControl", "offers"), (snap) => { if (snap.exists()) { const value = snap.data(); setOffers({ buyTwoTyres: { ...defaultOffers.buyTwoTyres, ...(value.buyTwoTyres || {}) }, serviceMot: { ...defaultOffers.serviceMot, ...(value.serviceMot || {}) }, tyreWorkshop: { ...defaultOffers.tyreWorkshop, ...(value.tyreWorkshop || {}) } }); } }),
+      onSnapshot(doc(db, "pricingControl", "offers"), (snap) => {
+        if (!snap.exists()) return;
+        const value = snap.data();
+        const workshop = value.tyreWorkshop || {};
+        setOffers({
+          buyTwoTyres: {
+            ...defaultOffers.buyTwoTyres,
+            ...(value.buyTwoTyres || {}),
+          },
+          serviceMot: {
+            ...defaultOffers.serviceMot,
+            ...(value.serviceMot || {}),
+          },
+          tyreWorkshop: {
+            ...defaultOffers.tyreWorkshop,
+            ...workshop,
+            tyreOnlyAlignment: {
+              ...defaultOffers.tyreWorkshop.tyreOnlyAlignment,
+              ...(workshop.tyreOnlyAlignment || {}),
+              discount:
+                workshop.tyreOnlyAlignment?.discount ??
+                workshop.tyreOnlyAlignmentDiscount ??
+                defaultOffers.tyreWorkshop.tyreOnlyAlignment.discount,
+            },
+            freeTwoWheel: {
+              ...defaultOffers.tyreWorkshop.freeTwoWheel,
+              ...(workshop.freeTwoWheel || {}),
+            },
+            fourWheelForTwo: {
+              ...defaultOffers.tyreWorkshop.fourWheelForTwo,
+              ...(workshop.fourWheelForTwo || {}),
+            },
+            fuelCreditOffer: {
+              ...defaultOffers.tyreWorkshop.fuelCreditOffer,
+              ...(workshop.fuelCreditOffer || {}),
+              amount:
+                workshop.fuelCreditOffer?.amount ??
+                workshop.fuelCredit ??
+                defaultOffers.tyreWorkshop.fuelCreditOffer.amount,
+            },
+          },
+        });
+      }),
       onSnapshot(doc(db, "pricingControl", "vanService"), (snap) => snap.exists() && setVanOil({ ...defaultVanOil, ...snap.data() })),
       onSnapshot(collection(db, "servicePricingMatrix"), (snapshot) => { const loaded = snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() })); setServiceRows(loaded.length ? loaded : serviceFallbackRows()); }),
       onSnapshot(collection(db, "motPricing"), (snapshot) => { const loaded = { ...defaultMotPrices }; snapshot.docs.forEach((entry) => { loaded[entry.id] = Number(entry.data().price || 0); }); setMotPrices(loaded); }),
@@ -134,7 +215,99 @@ export default function PricingControl() {
 
     <div className="pricingControlGrid"><div className="adminPanel pricingEditor"><h3>Individual tyre overrides</h3><div className="overrideEntry"><input placeholder="MIDAS stock code" value={overrideDraft.key} onChange={(e) => setOverrideDraft({ ...overrideDraft, key: e.target.value.toUpperCase() })} /><input placeholder="Description" value={overrideDraft.label} onChange={(e) => setOverrideDraft({ ...overrideDraft, label: e.target.value })} /><input type="number" step=".01" placeholder="Retail £" value={overrideDraft.price} onChange={(e) => setOverrideDraft({ ...overrideDraft, price: e.target.value })} /><button type="button" onClick={addOverride}>Add override</button></div><div className="overrideList">{(rules.overrides || []).map((entry) => <div key={entry.key}><span><b>{entry.key}</b><small>{entry.label || "Individual price"}</small></span><strong>£{Number(entry.price).toFixed(2)}</strong><button type="button" className="danger" onClick={() => changeRules({ ...rules, overrides: rules.overrides.filter((item) => item.key !== entry.key) })}>Remove</button></div>)}{!(rules.overrides || []).length && <p>No individual overrides.</p>}</div></div><div className="adminPanel pricingEditor"><h3>Air-conditioning</h3>{[["r134a", "R134a regas"], ["r1234yf", "R1234yf regas"], ["leakCheck", "Leak check"]].map(([key, label]) => <label key={key}>{label}<input type="number" step=".01" value={aircon[key]} onChange={(e) => changeAircon(key, e.target.value)} /></label>)}</div></div>
 
-    <div className="adminPanel pricingEditor"><h3>Customer offers</h3><div className="pricingControlGrid"><div><label className="toggleField"><input type="checkbox" checked={offers.buyTwoTyres.active} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, active: e.target.checked } })} />Buy two tyre offer active</label><label>Minimum quantity<input type="number" min="2" value={offers.buyTwoTyres.minimumQuantity} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, minimumQuantity: Number(e.target.value) } })} /></label><label>Saving per tyre £<input type="number" step=".01" value={offers.buyTwoTyres.discountAmount} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, discountAmount: Number(e.target.value), discountType: "fixedPerTyre" } })} /></label><label>Public headline<input value={offers.buyTwoTyres.headline} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, headline: e.target.value } })} /></label></div><div><label className="toggleField"><input type="checkbox" checked={offers.serviceMot.active} onChange={(e) => changeOffers({ ...offers, serviceMot: { ...offers.serviceMot, active: e.target.checked } })} />Service + MOT offer active</label><label>MOT add-on price £<input type="number" step=".01" value={offers.serviceMot.addOnPrice} onChange={(e) => changeOffers({ ...offers, serviceMot: { ...offers.serviceMot, addOnPrice: Number(e.target.value) } })} /></label><label>Public headline<input value={offers.serviceMot.headline} onChange={(e) => changeOffers({ ...offers, serviceMot: { ...offers.serviceMot, headline: e.target.value } })} /></label></div><div><label className="toggleField"><input type="checkbox" checked={offers.tyreWorkshop.active} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, active: e.target.checked } })} />Tyre + workshop offers active</label><label>2-wheel alignment £<input type="number" step=".01" value={offers.tyreWorkshop.twoWheelPrice} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, twoWheelPrice: Number(e.target.value) } })} /></label><label>4-wheel alignment £<input type="number" step=".01" value={offers.tyreWorkshop.fourWheelPrice} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, fourWheelPrice: Number(e.target.value) } })} /></label><label>Fuel credit £<input type="number" step=".01" value={offers.tyreWorkshop.fuelCredit} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, fuelCredit: Number(e.target.value) } })} /></label><label>Tyre-only alignment saving £<input type="number" step=".01" value={offers.tyreWorkshop.tyreOnlyAlignmentDiscount} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, tyreOnlyAlignmentDiscount: Number(e.target.value) } })} /></label></div></div></div>
+    <div className="adminPanel pricingEditor offerControlPanel">
+      <div className="adminEditHeader">
+        <div>
+          <h3>Customer offers</h3>
+          <p>Enable, remove and combine offers without changing the website code. Changes stay as a draft until Publish All.</p>
+        </div>
+      </div>
+
+      <div className="offerControlGrid">
+        <section className="offerControlCard">
+          <div className="offerControlTitle">
+            <div><span>OFFER 1</span><h4>Tyre multi-buy</h4></div>
+            <label className="toggleField">
+              <input type="checkbox" checked={offers.buyTwoTyres.active} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, active: e.target.checked } })} />
+              Active
+            </label>
+          </div>
+          <div className="pricingFields">
+            <label>Minimum tyres<input type="number" min="2" value={offers.buyTwoTyres.minimumQuantity} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, minimumQuantity: Number(e.target.value) } })} /></label>
+            <label>Discount type<select value={offers.buyTwoTyres.discountType} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, discountType: e.target.value } })}><option value="fixedPerTyre">£ per tyre</option><option value="percent">Percentage</option></select></label>
+            {offers.buyTwoTyres.discountType === "percent" ? (
+              <label>Discount %<input type="number" min="0" max="100" step=".1" value={offers.buyTwoTyres.discountPercent} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, discountPercent: Number(e.target.value) } })} /></label>
+            ) : (
+              <label>Saving per tyre £<input type="number" min="0" step=".01" value={offers.buyTwoTyres.discountAmount} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, discountAmount: Number(e.target.value) } })} /></label>
+            )}
+          </div>
+          <label>Public headline<input value={offers.buyTwoTyres.headline} onChange={(e) => changeOffers({ ...offers, buyTwoTyres: { ...offers.buyTwoTyres, headline: e.target.value } })} /></label>
+        </section>
+
+        <section className="offerControlCard">
+          <div className="offerControlTitle">
+            <div><span>OFFER 2</span><h4>Service + MOT</h4></div>
+            <label className="toggleField">
+              <input type="checkbox" checked={offers.serviceMot.active} onChange={(e) => changeOffers({ ...offers, serviceMot: { ...offers.serviceMot, active: e.target.checked } })} />
+              Active
+            </label>
+          </div>
+          <div className="pricingFields">
+            <label>MOT add-on price £<input type="number" min="0" step=".01" value={offers.serviceMot.addOnPrice} onChange={(e) => changeOffers({ ...offers, serviceMot: { ...offers.serviceMot, addOnPrice: Number(e.target.value) } })} /></label>
+          </div>
+          <label>Public headline<input value={offers.serviceMot.headline} onChange={(e) => changeOffers({ ...offers, serviceMot: { ...offers.serviceMot, headline: e.target.value } })} /></label>
+          <div className="offerStacking">
+            <strong>May combine with:</strong>
+            <label className="toggleField"><input type="checkbox" checked={offers.serviceMot.stackWithTyres !== false} onChange={(e) => changeOffers({ ...offers, serviceMot: { ...offers.serviceMot, stackWithTyres: e.target.checked } })} />Tyre multi-buy</label>
+            <label className="toggleField"><input type="checkbox" checked={offers.serviceMot.stackWithWorkshop !== false} onChange={(e) => changeOffers({ ...offers, serviceMot: { ...offers.serviceMot, stackWithWorkshop: e.target.checked } })} />Tyre + workshop benefit</label>
+          </div>
+        </section>
+      </div>
+
+      <section className="offerControlCard workshopOfferEditor">
+        <div className="offerControlTitle">
+          <div><span>OFFER 3</span><h4>Tyres + workshop benefits</h4></div>
+          <label className="toggleField">
+            <input type="checkbox" checked={offers.tyreWorkshop.active} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, active: e.target.checked } })} />
+            Active
+          </label>
+        </div>
+
+        <div className="pricingFields">
+          <label>Minimum tyres<input type="number" min="2" value={offers.tyreWorkshop.minimumQuantity} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, minimumQuantity: Number(e.target.value) } })} /></label>
+          <label>Customer qualifies with<select value={offers.tyreWorkshop.eligibility} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, eligibility: e.target.value } })}><option value="motOrService">MOT or service</option><option value="mot">MOT only</option><option value="service">Service only</option><option value="none">Tyres alone</option></select></label>
+          <label>2-wheel alignment retail £<input type="number" min="0" step=".01" value={offers.tyreWorkshop.twoWheelPrice} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, twoWheelPrice: Number(e.target.value) } })} /></label>
+          <label>4-wheel alignment retail £<input type="number" min="0" step=".01" value={offers.tyreWorkshop.fourWheelPrice} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, fourWheelPrice: Number(e.target.value) } })} /></label>
+        </div>
+
+        <div className="offerBenefitGrid">
+          <div>
+            <label className="toggleField"><input type="checkbox" checked={offers.tyreWorkshop.freeTwoWheel.active} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, freeTwoWheel: { ...offers.tyreWorkshop.freeTwoWheel, active: e.target.checked } } })} />Free 2-wheel alignment choice</label>
+            <label>Customer wording<input value={offers.tyreWorkshop.freeTwoWheel.label} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, freeTwoWheel: { ...offers.tyreWorkshop.freeTwoWheel, label: e.target.value } } })} /></label>
+          </div>
+          <div>
+            <label className="toggleField"><input type="checkbox" checked={offers.tyreWorkshop.fourWheelForTwo.active} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, fourWheelForTwo: { ...offers.tyreWorkshop.fourWheelForTwo, active: e.target.checked } } })} />4-wheel for 2-wheel price choice</label>
+            <label>Customer wording<input value={offers.tyreWorkshop.fourWheelForTwo.label} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, fourWheelForTwo: { ...offers.tyreWorkshop.fourWheelForTwo, label: e.target.value } } })} /></label>
+          </div>
+          <div>
+            <label className="toggleField"><input type="checkbox" checked={offers.tyreWorkshop.fuelCreditOffer.active} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, fuelCreditOffer: { ...offers.tyreWorkshop.fuelCreditOffer, active: e.target.checked } } })} />Fuel credit choice</label>
+            <label>Fuel credit £<input type="number" min="0" step=".01" value={offers.tyreWorkshop.fuelCreditOffer.amount} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, fuelCreditOffer: { ...offers.tyreWorkshop.fuelCreditOffer, amount: Number(e.target.value) } } })} /></label>
+            <label>Customer wording<input value={offers.tyreWorkshop.fuelCreditOffer.label} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, fuelCreditOffer: { ...offers.tyreWorkshop.fuelCreditOffer, label: e.target.value } } })} /></label>
+          </div>
+          <div>
+            <label className="toggleField"><input type="checkbox" checked={offers.tyreWorkshop.tyreOnlyAlignment.active} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, tyreOnlyAlignment: { ...offers.tyreWorkshop.tyreOnlyAlignment, active: e.target.checked } } })} />Tyre-only alignment offer</label>
+            <label>Alignment saving £<input type="number" min="0" step=".01" value={offers.tyreWorkshop.tyreOnlyAlignment.discount} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, tyreOnlyAlignment: { ...offers.tyreWorkshop.tyreOnlyAlignment, discount: Number(e.target.value) } } })} /></label>
+            <label>Customer wording<input value={offers.tyreWorkshop.tyreOnlyAlignment.label} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, tyreOnlyAlignment: { ...offers.tyreWorkshop.tyreOnlyAlignment, label: e.target.value } } })} /></label>
+          </div>
+        </div>
+
+        <div className="offerStacking">
+          <strong>May combine with:</strong>
+          <label className="toggleField"><input type="checkbox" checked={offers.tyreWorkshop.stackWithTyreDiscount !== false} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, stackWithTyreDiscount: e.target.checked } })} />Tyre multi-buy</label>
+          <label className="toggleField"><input type="checkbox" checked={offers.tyreWorkshop.stackWithServiceMot !== false} onChange={(e) => changeOffers({ ...offers, tyreWorkshop: { ...offers.tyreWorkshop, stackWithServiceMot: e.target.checked } })} />Service + MOT offer</label>
+        </div>
+      </section>
+    </div>
 
     <WorkshopCapacity />
     <div className="adminPanel pricingEditor"><h3>Publish history</h3><div className="pricingHistoryList">{history.map((entry) => <div key={entry.id}><span><b>{entry.actor?.name || entry.actor?.email || "Admin"}</b><small>{entry.createdAt?.toDate?.().toLocaleString("en-GB") || "Recent publish"}</small></span><span>{entry.summary?.tyreBands || 0} bands · {entry.summary?.tyreOverrides || 0} overrides · {entry.summary?.servicePrices || 0} service prices</span></div>)}{!history.length && <p>No publish history yet.</p>}</div></div>
