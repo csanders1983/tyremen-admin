@@ -36,7 +36,7 @@ export default function Login() {
   return (
     <main className="loginPage">
       <form className="loginCard" onSubmit={login}>
-        <div className="loginLogo">TYREMEN</div>
+        <div className="loginLogo"><img src="/tyremen-logo-white.svg" alt="Tyremen — More Than Just Tyres" /></div>
         <span>SECURE ADMIN SYSTEM</span>
         <h1>Staff login</h1>
         <label>Email address<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
