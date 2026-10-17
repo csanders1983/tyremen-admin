@@ -7,6 +7,7 @@ const AuthContext = createContext(null);
 
 export const ROLE_LABELS = {
   owner: "Owner / Admin",
+  employee: "Employee portal",
   manager: "Manager",
   staff: "Staff",
   accounts: "Accounts",
@@ -15,7 +16,8 @@ export const ROLE_LABELS = {
 };
 
 export const ROLE_ACCESS = {
-  owner: ["tyreForeman", "dashboard", "jobs", "calendar", "sales", "stock", "pricing", "services", "pages", "settings", "vct", "users", "workshop"],
+  employee: [],
+  owner: ["hr", "templates", "tyreForeman", "dashboard", "jobs", "calendar", "sales", "stock", "pricing", "services", "pages", "settings", "vct", "users", "workshop"],
   manager: ["tyreForeman", "dashboard", "jobs", "calendar", "sales", "stock", "services", "vct", "workshop"],
   staff: ["tyreForeman", "dashboard", "jobs", "calendar", "sales", "stock", "workshop"],
   accounts: ["dashboard", "sales"],
@@ -63,7 +65,7 @@ export function AuthProvider({ children }) {
       profile,
       role,
       loading,
-      can: (permission) => (ROLE_ACCESS[role] || []).includes(permission),
+      can: (permission) => permission === "hr" ? role === "owner" || profile?.hrAccess === true : permission === "marketing" ? ["owner", "manager"].includes(role) || profile?.marketingAccess === true : (ROLE_ACCESS[role] || []).includes(permission),
       signOut: () => signOut(auth),
     };
   }, [user, profile, loading]);

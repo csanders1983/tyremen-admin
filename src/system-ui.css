@@ -12,3 +12,64 @@
 body:has(.systemShell){margin:0;background:#090c10}.systemShell .diaryStatsGrid{gap:12px;margin-bottom:15px}.systemShell .diaryStat{padding:16px;border:1px solid #29313b;border-radius:8px;background:#11171e}.systemShell .diaryStat strong{font-size:27px}.systemShell .diaryStat span{font-size:10px}.systemShell .diaryStat small{font-size:10px}.systemShell .centralServiceMatrix{overflow-x:auto}.systemShell .centralServiceHead,.systemShell .centralServiceRow{min-width:520px}.systemShell .pricingFields{min-width:0}.systemShell .salesMain>.adminPanel>p{font-size:12px;color:#95a6b9}.systemShell .sysTableScroll{max-width:100%}.systemShell .stockDescription>span{min-width:0;max-width:none}.systemShell .stockDescription small{font-size:10px}.systemShell .salesStockPicker input{max-width:100%}.systemShell .diaryAllServiceGrid{overflow-x:auto}.systemShell .dailyCapacityGrid{gap:10px}.systemShell .dailyCapacityCard{border-radius:8px;padding:12px}.systemShell .dailyCapacityCard strong{font-size:22px}
 .loginPage{font-family:Inter,"Segoe UI",Arial,sans-serif;background:radial-gradient(ellipse at 50% 5%,#1c241c 0,#0b1117 40%,#080c11 100%)}.loginCard{border:1px solid #343f4b;border-top:3px solid #ffda16;background:#11171f;border-radius:12px;padding:34px;box-shadow:0 24px 90px #0007}.loginCard .loginLogo{font-size:35px;color:#f2f5fa;letter-spacing:-1px}.loginCard>span{color:#ffda16;letter-spacing:2px}.loginCard h1{font-size:23px;font-weight:600;letter-spacing:-.5px;margin:26px 0 18px}.loginCard label{font-size:11px;color:#9eafc1;font-weight:550}.loginCard input{background:#0a1017;border-color:#354452;border-radius:6px;font-size:14px}.loginCard button{border-radius:6px;font-size:12px;font-weight:650}.loginCard .adminPrimaryButton{background:#ffda16}
 @media(max-width:600px){.systemShell .sysActivityTable,.systemShell .wbOperationsTable{min-width:0;width:100%;display:block}.systemShell .sysActivityTable thead,.systemShell .wbOperationsTable thead{display:none}.systemShell .sysActivityTable tbody,.systemShell .wbOperationsTable tbody{display:block}.systemShell .sysActivityTable tr{display:grid;grid-template-columns:minmax(0,1fr) auto;padding:15px 17px;border-top:1px solid #29313b;gap:9px 12px}.systemShell .sysActivityTable td{border:0;padding:0;min-width:0}.systemShell .sysActivityTable td:nth-child(1){grid-column:2;grid-row:1;text-align:right;font-size:12px}.systemShell .sysActivityTable td:nth-child(2){grid-column:1;grid-row:1}.systemShell .sysActivityTable td:nth-child(3){grid-column:1/-1}.systemShell .sysActivityTable td:nth-child(4){grid-column:1}.systemShell .sysActivityTable td:nth-child(5){grid-column:2;align-self:center}.systemShell .sysActivityTable td>strong{font-size:12px}.systemShell .sysActivityTable td>small{font-size:11px}.systemShell .sysActivityTable .sysPlate{font-size:12px}.systemShell .sysActivityTable .sysStatus{font-size:10px}.systemShell .sysTableTools input{width:210px}.systemShell .wbOperationsTable tr{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:17px;border-top:1px solid #29313b}.systemShell .wbOperationsTable td{padding:0;border:0;min-width:0}.systemShell .wbOperationsTable td:first-child{grid-column:1/-1}.systemShell .wbOperationsTable td:nth-child(3):before{content:"Start ";color:#8ba0b6;font-size:10px}.systemShell .wbOperationsTable td:nth-child(4):before{content:"Finish ";color:#8ba0b6;font-size:10px}.systemShell .wbOperationsTable td:nth-child(2){grid-column:1/-1}.systemShell .wbOperationsTable td:nth-child(5){grid-column:1/-1}.systemShell .wbOperationsTable td:nth-child(6){grid-column:1/-1}.systemShell .wbOperationsTable td>strong{max-width:none;font-size:12px}.systemShell .wbOperationsTable td button{min-height:36px;width:100%}.systemShell .wbListState{font-size:11px}.systemShell .stockTable:after{content:"Swipe across to see all prices and actions";display:block;padding:10px;font-size:10px;color:#92a5bb}}
+
+
+/* TYREMEN LOGO BRANDING */
+.sysBrand {
+  padding-top: 2px;
+}
+
+.sysBrand > img {
+  display: block;
+  width: 100%;
+  max-width: 205px;
+  height: auto;
+  max-height: 72px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.sysBrand > span {
+  margin-top: 5px;
+  padding-left: 3px;
+}
+
+.sysMobileBar > a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+}
+
+.sysMobileLogo {
+  display: block;
+  width: 128px;
+  height: 38px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.sysMobileBar > a small {
+  color: var(--sys-yellow);
+  font-size: 8px;
+  letter-spacing: 1.2px;
+}
+
+.loginCard .loginLogo {
+  line-height: 0;
+}
+
+.loginCard .loginLogo img {
+  display: block;
+  width: min(280px, 100%);
+  height: auto;
+  max-height: 92px;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+@media (max-width: 780px) {
+  .sysBrand > img {
+    max-width: 180px;
+  }
+}
