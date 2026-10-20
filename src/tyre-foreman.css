@@ -22,3 +22,8 @@
 /* Recorded safety figures and visible measurement units */
 .tfSettingGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px}.tfSettingGrid>label{display:grid;gap:6px;color:#ffd000;font-size:12px;font-weight:900;letter-spacing:.04em}.tfUnitInput{display:flex;align-items:stretch;min-width:0}.tfUnitInput input{min-width:0;flex:1}.tfUnitInput>b{display:grid;place-items:center;flex:0 0 auto;min-width:42px;padding:0 8px;border:1px solid #555;border-left:0;background:#292929;color:#fff;font-size:12px}.tfTreadRow>.tfUnitInput{width:100%}.tfTreadRow>.tfUnitInput input{width:100%}
 @media(max-width:700px){.tfSettingGrid{grid-template-columns:1fr}.tfUnitInput>b{min-width:36px;padding:0 5px}.tfTreadRow>.tfUnitInput>b{font-size:10px}}
+
+
+/* High-visibility tyre handover warnings */
+.jobSafetyPrompts{grid-template-columns:minmax(0,2fr) minmax(220px,1fr);gap:10px;margin:12px 0}.jobSafetyWarning{display:flex;flex-direction:column;gap:6px;padding:13px 15px;border:2px solid #ffd000;border-radius:7px;background:#ffd000;color:#090909;box-shadow:0 5px 16px rgba(0,0,0,.24)}.jobSafetyWarning span{font-size:11px;font-weight:950;letter-spacing:.09em}.jobSafetyWarning strong{font-size:14px;line-height:1.4}.tfScreen .jobSafetyWarning strong{font-size:clamp(14px,1.05vw,19px)}
+@media(max-width:700px){.jobSafetyPrompts{grid-template-columns:1fr}.jobSafetyWarning{padding:12px}}
