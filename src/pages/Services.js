@@ -31,6 +31,20 @@ const motTypes = [
   { key: "class7", label: "Class 7 MOT", description: "Larger vans / commercials" },
 ];
 
+const additionalServiceTypes = [
+  { key: "puncture", label: "Tyre / Puncture Repair", maxQty: 4 },
+  { key: "weld", label: "Alloy Wheel Weld Repair", maxQty: 4 },
+  { key: "diagnostics", label: "Vehicle Diagnostics", maxQty: 1 },
+  { key: "locking", label: "Locking Wheel Nut Removal", maxQty: 4 },
+  { key: "tpms", label: "TPMS Sensor Replacement", maxQty: 4 },
+  { key: "balancing", label: "Wheel Balancing", maxQty: 4 },
+  { key: "suspension", label: "Suspension Inspection & Repair", maxQty: 1 },
+  { key: "steering", label: "Steering Inspection & Repair", maxQty: 1 },
+  { key: "exhaust", label: "Exhaust Inspection & Repair", maxQty: 1 },
+  { key: "battery", label: "Battery Test & Replacement", maxQty: 1 },
+  { key: "engine", label: "General Repair / Other Mechanical", maxQty: 1 },
+];
+
 const defaultPrices = {
   oil: [100, 100, 114.17, 114.17, 137.5, 137.5],
   interim: [120, 120, 137, 137, 165, 165],
@@ -53,6 +67,7 @@ export default function Services() {
   const [motPrices, setMotPrices] = useState({});
   const [draftPrices, setDraftPrices] = useState({});
   const [draftMotPrices, setDraftMotPrices] = useState({});
+  const [additionalServicePrices, setAdditionalServicePrices] = useState({});
   const [activeType, setActiveType] = useState("oil");
   const [saving, setSaving] = useState(false);
 
@@ -114,6 +129,39 @@ export default function Services() {
 
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "pricingControl", "additionalServices"),
+      (snapshot) => {
+        const data = snapshot.exists() ? snapshot.data() : {};
+        setAdditionalServicePrices(data.services || {});
+      }
+    );
+    return () => unsub();
+  }, []);
+
+  const saveAdditionalService = async (serviceKey, changes) => {
+    const definition = additionalServiceTypes.find((item) => item.key === serviceKey);
+    const current = additionalServicePrices[serviceKey] || {};
+    const row = {
+      active: current.active !== false,
+      pricingMode: current.pricingMode === "fixed" ? "fixed" : "quote",
+      price: Number(current.price || 0),
+      maxQty: Number(current.maxQty || definition?.maxQty || 1),
+      ...changes,
+      updatedAt: new Date().toISOString(),
+    };
+    const next = { ...additionalServicePrices, [serviceKey]: row };
+    setAdditionalServicePrices(next);
+    setSaving(true);
+    await setDoc(
+      doc(db, "pricingControl", "additionalServices"),
+      { services: next, updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
+    setSaving(false);
+  };
 
   const getRow = (serviceType, bandIndex) => {
     const band = engineBands[bandIndex];
@@ -368,6 +416,87 @@ export default function Services() {
                 </label>
 
                 <b>Live</b>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="adminPanel additionalServicesPanel">
+        <div className="adminEditHeader">
+          <div>
+            <h3>Tyre &amp; Mechanical Service Purchases</h3>
+            <p>Publish each service, choose fixed-price or inspection pricing, and control online quantities.</p>
+          </div>
+        </div>
+
+        <div className="additionalServicesTable">
+          <div className="additionalServiceHead">
+            <span>Service</span>
+            <span>Published</span>
+            <span>Pricing</span>
+            <span>Price inc VAT</span>
+            <span>Maximum quantity</span>
+          </div>
+
+          {additionalServiceTypes.map((service) => {
+            const current = additionalServicePrices[service.key] || {};
+            const active = current.active !== false;
+            const pricingMode = current.pricingMode === "fixed" ? "fixed" : "quote";
+            const maxAllowed = service.maxQty > 1 ? 4 : 1;
+
+            return (
+              <div className="additionalServiceRow" key={service.key}>
+                <strong>{service.label}</strong>
+                <label className="toggleField">
+                  <input
+                    type="checkbox"
+                    checked={active}
+                    onChange={(event) =>
+                      saveAdditionalService(service.key, { active: event.target.checked })
+                    }
+                  />
+                  {active ? "Live" : "Hidden"}
+                </label>
+                <select
+                  value={pricingMode}
+                  onChange={(event) =>
+                    saveAdditionalService(service.key, { pricingMode: event.target.value })
+                  }
+                >
+                  <option value="quote">Price after inspection</option>
+                  <option value="fixed">Fixed online price</option>
+                </select>
+                <label className="moneyInput">
+                  £
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={current.price ?? ""}
+                    disabled={pricingMode !== "fixed"}
+                    onChange={(event) =>
+                      setAdditionalServicePrices((previous) => ({
+                        ...previous,
+                        [service.key]: { ...current, price: event.target.value },
+                      }))
+                    }
+                    onBlur={(event) =>
+                      saveAdditionalService(service.key, { price: Number(event.target.value || 0) })
+                    }
+                  />
+                </label>
+                <select
+                  value={Number(current.maxQty || service.maxQty)}
+                  disabled={maxAllowed === 1}
+                  onChange={(event) =>
+                    saveAdditionalService(service.key, { maxQty: Number(event.target.value) })
+                  }
+                >
+                  {Array.from({ length: maxAllowed }, (_, index) => index + 1).map((value) => (
+                    <option key={value} value={value}>{value}</option>
+                  ))}
+                </select>
               </div>
             );
           })}
