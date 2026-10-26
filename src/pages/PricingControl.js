@@ -1,6 +1,6 @@
 import "../admin-pages.css";
 import { useEffect, useMemo, useState } from "react";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, setDoc } from "firebase/firestore";
 import * as XLSX from "xlsx";
 import { auth, db } from "../firebase";
 import WorkshopCapacity from "../components/WorkshopCapacity";
@@ -21,6 +21,25 @@ const engineBands = [[0, 1200, "0-1200cc"], [1201, 1500, "1201-1500cc"], [1501, 
 const serviceTypes = [["oil", "Oil & Filter"], ["interim", "Interim"], ["full", "Full"], ["major", "Major"]];
 const defaultServiceExVat = { oil: [100, 100, 114.17, 114.17, 137.5, 137.5], interim: [120, 120, 137, 137, 165, 165], full: [155, 155, 175, 175, 210, 210], major: [180, 180, 205, 205, 245, 245] };
 const defaultMotPrices = { class4: 40, class7: 45 };
+const additionalServiceTypes = [
+  { key: "puncture", label: "Tyre / Puncture Repair", maxQty: 4 },
+  { key: "weld", label: "Alloy Wheel Weld Repair", maxQty: 4 },
+  { key: "diagnostics", label: "Vehicle Diagnostics", maxQty: 1 },
+  { key: "locking", label: "Locking Wheel Nut Removal", maxQty: 4 },
+  { key: "tpms", label: "TPMS Sensor Replacement", maxQty: 4 },
+  { key: "balancing", label: "Wheel Balancing", maxQty: 4 },
+  { key: "suspension", label: "Suspension Inspection & Repair", maxQty: 1 },
+  { key: "steering", label: "Steering Inspection & Repair", maxQty: 1 },
+  { key: "exhaust", label: "Exhaust Inspection & Repair", maxQty: 1 },
+  { key: "battery", label: "Battery Test & Replacement", maxQty: 1 },
+  { key: "engine", label: "General Repair / Other Mechanical", maxQty: 1 },
+];
+const defaultAdditionalServices = Object.fromEntries(
+  additionalServiceTypes.map((service) => [
+    service.key,
+    { active: true, pricingMode: "quote", price: 0, maxQty: service.maxQty },
+  ])
+);
 const serviceFallbackRows = () => serviceTypes.flatMap(([serviceType]) => engineBands.map(([minCC, maxCC, bandLabel], index) => ({ id: `${serviceType}-${minCC}-${maxCC}`, serviceType, bandLabel, minCC, maxCC, priceIncVat: Number((defaultServiceExVat[serviceType][index] * 1.2).toFixed(2)) })));
 const historyTime = (value) => value?.toMillis?.() || Date.parse(value || "") || 0;
 
@@ -31,6 +50,7 @@ export default function PricingControl() {
   const [serviceRows, setServiceRows] = useState(serviceFallbackRows);
   const [motPrices, setMotPrices] = useState(defaultMotPrices);
   const [vanOil, setVanOil] = useState(defaultVanOil);
+  const [additionalServices, setAdditionalServices] = useState(defaultAdditionalServices);
   const [history, setHistory] = useState([]);
   const [dirty, setDirty] = useState(false);
   const [status, setStatus] = useState("Live");
@@ -43,6 +63,7 @@ export default function PricingControl() {
       onSnapshot(doc(db, "pricingControl", "tyres"), (snap) => snap.exists() && setRules({ ...defaultRules, ...snap.data(), overrides: snap.data().overrides || [], tradePricing: { ...defaultRules.tradePricing, ...(snap.data().tradePricing || {}) } })),
       onSnapshot(doc(db, "pricingControl", "offers"), (snap) => { if (snap.exists()) { const value = snap.data(); setOffers({ buyTwoTyres: { ...defaultOffers.buyTwoTyres, ...(value.buyTwoTyres || {}) }, serviceMot: { ...defaultOffers.serviceMot, ...(value.serviceMot || {}) } }); } }),
       onSnapshot(doc(db, "pricingControl", "vanService"), (snap) => snap.exists() && setVanOil({ ...defaultVanOil, ...snap.data() })),
+      onSnapshot(doc(db, "pricingControl", "additionalServices"), (snap) => { if (snap.exists()) { const stored = snap.data().services || {}; setAdditionalServices(Object.fromEntries(additionalServiceTypes.map((service) => [service.key, { ...defaultAdditionalServices[service.key], ...(stored[service.key] || {}) }]))); } }),
       onSnapshot(collection(db, "servicePricingMatrix"), (snapshot) => { const loaded = snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() })); setServiceRows(loaded.length ? loaded : serviceFallbackRows()); }),
       onSnapshot(collection(db, "motPricing"), (snapshot) => { const loaded = { ...defaultMotPrices }; snapshot.docs.forEach((entry) => { loaded[entry.id] = Number(entry.data().price || 0); }); setMotPrices(loaded); }),
       onSnapshot(collection(db, "pricingHistory"), (snapshot) => setHistory(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() })).sort((a, b) => historyTime(b.createdAt) - historyTime(a.createdAt)).slice(0, 20))),
@@ -55,6 +76,7 @@ export default function PricingControl() {
   const changeOffers = (next) => { setOffers(next); setDirty(true); };
   const changeMot = (key, value) => { setMotPrices((current) => ({ ...current, [key]: Number(value) })); setDirty(true); };
   const changeService = (id, value) => { setServiceRows((current) => current.map((row) => row.id === id ? { ...row, priceIncVat: Number(value) } : row)); setDirty(true); };
+  const changeAdditionalService = (key, changes) => { setAdditionalServices((current) => ({ ...current, [key]: { ...current[key], ...changes } })); setDirty(true); };
 
   const previewResult = useMemo(() => {
     const code = preview.code.trim().toUpperCase();
@@ -109,9 +131,10 @@ export default function PricingControl() {
     setStatus("Publishing…");
     try {
       const token = await auth.currentUser.getIdToken();
-      const response = await fetch(`${FUNCTIONS_ROOT}/publishPricingControl`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ pricing: { aircon, tyres: rules, offers, serviceRows, motPrices, vanOil } }) });
+      const response = await fetch(`${FUNCTIONS_ROOT}/publishPricingControl`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ pricing: { aircon, tyres: rules, offers, serviceRows, motPrices, vanOil, additionalServices } }) });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || "Prices could not be published");
+      await setDoc(doc(db, "pricingControl", "additionalServices"), { services: additionalServices, updatedAt: new Date().toISOString() }, { merge: true });
       setDirty(false); setStatus("Published live");
     } catch (error) { setStatus(error.message || "Publish failed"); }
   };
@@ -127,6 +150,25 @@ export default function PricingControl() {
     </div>
 
     <div className="adminPanel pricingEditor"><div className="adminEditHeader"><div><h3>Service prices including VAT</h3><p>Public prices by engine size. Nothing changes live until Publish All.</p></div></div><div className="centralServiceMatrix"><div className="centralServiceHead"><span>Engine</span>{serviceTypes.map(([, label]) => <span key={label}>{label}</span>)}</div>{engineBands.map(([minCC, , label]) => <div className="centralServiceRow" key={label}><strong>{label}</strong>{serviceTypes.map(([key]) => { const row = serviceRows.find((entry) => entry.serviceType === key && Number(entry.minCC) === minCC); return <label key={key}>£<input type="number" step=".01" value={row?.priceIncVat || 0} onChange={(e) => row && changeService(row.id, e.target.value)} /></label>; })}</div>)}</div></div>
+    <div className="adminPanel pricingEditor additionalServicesPanel">
+      <div className="adminEditHeader"><div><h3>Tyre &amp; Mechanical Service Purchases</h3><p>Publish or hide each service, choose its pricing method and set the maximum online quantity.</p></div></div>
+      <div className="additionalServicesTable">
+        <div className="additionalServiceHead"><span>Service</span><span>Published</span><span>Pricing</span><span>Price inc VAT</span><span>Maximum quantity</span></div>
+        {additionalServiceTypes.map((service) => {
+          const current = additionalServices[service.key] || defaultAdditionalServices[service.key];
+          const fixed = current.pricingMode === "fixed";
+          const maxAllowed = service.maxQty > 1 ? 4 : 1;
+          return <div className="additionalServiceRow" key={service.key}>
+            <strong>{service.label}</strong>
+            <label className="toggleField"><input type="checkbox" checked={current.active !== false} onChange={(event) => changeAdditionalService(service.key, { active: event.target.checked })} />{current.active !== false ? "Live" : "Hidden"}</label>
+            <select value={fixed ? "fixed" : "quote"} onChange={(event) => changeAdditionalService(service.key, { pricingMode: event.target.value })}><option value="quote">Price after inspection</option><option value="fixed">Fixed online price</option></select>
+            <label className="moneyInput">£<input type="number" min="0" step=".01" value={current.price || 0} disabled={!fixed} onChange={(event) => changeAdditionalService(service.key, { price: Number(event.target.value) })} /></label>
+            <select value={Number(current.maxQty || service.maxQty)} disabled={maxAllowed === 1} onChange={(event) => changeAdditionalService(service.key, { maxQty: Number(event.target.value) })}>{Array.from({ length: maxAllowed }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value}</option>)}</select>
+          </div>;
+        })}
+      </div>
+    </div>
+
     <div className="adminPanel pricingEditor"><h3>Van service oil allowance</h3><p>Van estimate is based on oil quantity: included litres plus extra litres at the published rate. Confirm the actual capacity and oil specification before work.</p><div className="pricingFields">{[["includedLitres", "Oil included (L)"], ["estimatedVanLitres", "Estimated van oil (L)"], ["extraPerLitreIncVat", "Extra oil per litre inc VAT (£)"]].map(([key, label]) => <label key={key}>{label}<input type="number" min="0" step="0.5" value={vanOil[key]} onChange={(event) => { setVanOil({ ...vanOil, [key]: Number(event.target.value) }); setDirty(true); }} /></label>)}</div><strong>Illustrative van addition: £{(Math.max(0, vanOil.estimatedVanLitres - vanOil.includedLitres) * vanOil.extraPerLitreIncVat).toFixed(2)}</strong></div>
 
     <div className="adminPanel pricingEditor"><div className="adminEditHeader"><div><h3>Tyre price formula</h3><p>Import webcost.xlsx or edit the draft bands.</p></div><label className="formulaImportButton">Import .xlsx<input type="file" accept=".xlsx,.xls" onChange={importFormula} /></label></div><div className="pricingFields"><label>VAT %<input type="number" value={rules.vatPercent} onChange={(e) => changeRules({ ...rules, vatPercent: Number(e.target.value) })} /></label><label>Website discount %<input type="number" value={rules.websiteDiscountPercent || 0} onChange={(e) => changeRules({ ...rules, websiteDiscountPercent: Number(e.target.value) })} /></label><label>Rounding<select value={rules.roundingMode} onChange={(e) => changeRules({ ...rules, roundingMode: e.target.value })}><option value="ceilPound">Round up to next £</option><option value="nearestPenny">Nearest penny</option></select></label></div><div className="markupBands">{rules.markupBands.map((band, index) => <div className="markupRow" key={index}><label>Cost up to £<input type="number" placeholder="No limit" value={band.upTo >= 999999 ? "" : band.upTo} onChange={(e) => changeRules({ ...rules, markupBands: rules.markupBands.map((entry, position) => position === index ? { ...entry, upTo: Number(e.target.value || 999999) } : entry) })} /></label><label>Add £<input type="number" value={band.markup} onChange={(e) => changeRules({ ...rules, markupBands: rules.markupBands.map((entry, position) => position === index ? { ...entry, markup: Number(e.target.value) } : entry) })} /></label></div>)}</div><h4>Staff price levels</h4><div className="pricingFields"><label>2+ reduction ex VAT £<input type="number" step=".001" value={rules.tradePricing.twoPlusDiscountExVat} onChange={(e) => changeRules({ ...rules, tradePricing: { ...rules.tradePricing, twoPlusDiscountExVat: Number(e.target.value) } })} /></label><label>Xtra threshold retail £<input type="number" value={rules.tradePricing.xtraThresholdIncVat} onChange={(e) => changeRules({ ...rules, tradePricing: { ...rules.tradePricing, xtraThresholdIncVat: Number(e.target.value) } })} /></label><label>Xtra discount up to threshold %<input type="number" value={rules.tradePricing.xtraDiscountBelowPercent} onChange={(e) => changeRules({ ...rules, tradePricing: { ...rules.tradePricing, xtraDiscountBelowPercent: Number(e.target.value) } })} /></label><label>Xtra discount above threshold %<input type="number" value={rules.tradePricing.xtraDiscountAbovePercent} onChange={(e) => changeRules({ ...rules, tradePricing: { ...rules.tradePricing, xtraDiscountAbovePercent: Number(e.target.value) } })} /></label><label>Supply markup ex VAT £<input type="number" value={rules.tradePricing.supplyMarkupExVat} onChange={(e) => changeRules({ ...rules, tradePricing: { ...rules.tradePricing, supplyMarkupExVat: Number(e.target.value) } })} /></label></div></div>
