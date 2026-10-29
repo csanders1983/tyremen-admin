@@ -76,6 +76,8 @@ export function buildTyreCompletion(job={},input={},technicians=[]){
   for(const key of ['pressureChecked','torqueChecked','fitmentChecked','lockingWheelNutReturned']){
     if(input[key]!==true)throw new Error('Complete every tyre safety confirmation');
   }
+  const assigned=[...new Set((technicians||[]).map(text).filter(Boolean))];
+  if(!assigned.length)throw new Error('Assign at least one technician before saving the inspection');
   const technical=technicalFor(job,input);
   const frontPsi=Number(technical.front.psi),rearPsi=Number(technical.rear.psi),torqueNm=Number(technical.torque);
   if(!Number.isFinite(frontPsi)||frontPsi<10||frontPsi>100||!Number.isFinite(rearPsi)||rearPsi<10||rearPsi>100||!Number.isFinite(torqueNm)||torqueNm<30||torqueNm>300)throw new Error('Refresh the vehicle lookup to import manufacturer pressure and wheel torque data');
@@ -94,7 +96,7 @@ export function buildTyreCompletion(job={},input={},technicians=[]){
       rear:{...(source.rear?.pressure||{}),psi:Number(rearPsi.toFixed(1))}
     },
     torqueNm:Number(torqueNm.toFixed(1)),
-    technicians:[...new Set((technicians||[]).map(text).filter(Boolean))],
+    technicians:assigned,
     completedAt:new Date().toISOString()
   };
 }
