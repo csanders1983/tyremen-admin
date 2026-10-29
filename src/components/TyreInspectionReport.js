@@ -56,6 +56,49 @@ function pressureLabel(value){
   if(value.psi===''&&value.bar==='')return 'Not available';
   return [value.psi!==''?`${value.psi} psi`:'',value.bar!==''?`${value.bar} bar`:''].filter(Boolean).join(' / ');
 }
+
+export function buildTyreCompletion(job={},input={},technicians=[]){
+  const location=text(input.lockingWheelNutLocation);
+  if(!LOCKING_LOCATIONS.includes(location))throw new Error('Choose where the locking wheel nut was returned');
+  const recipient=text(input.lockingWheelNutRecipient).slice(0,120);
+  if(location==='Customer'&&!recipient)throw new Error('Enter who the locking wheel nut was handed to');
+  const punctureCause=text(input.punctureCause).slice(0,500);
+  if(hasPuncture(job)&&!punctureCause)throw new Error('Record what caused the puncture');
+  const treadDepths={};
+  for(const position of POSITIONS){
+    treadDepths[position]={};
+    for(const point of POINTS){
+      const number=Number(input.treadDepths?.[position]?.[point]);
+      if(!Number.isFinite(number)||number<0||number>20)throw new Error(`${position} ${point} tread depth must be between 0 and 20 mm`);
+      treadDepths[position][point]=Number(number.toFixed(1));
+    }
+  }
+  for(const key of ['pressureChecked','torqueChecked','fitmentChecked','lockingWheelNutReturned']){
+    if(input[key]!==true)throw new Error('Complete every tyre safety confirmation');
+  }
+  const technical=technicalFor(job,input);
+  const frontPsi=Number(technical.front.psi),rearPsi=Number(technical.rear.psi),torqueNm=Number(technical.torque);
+  if(!Number.isFinite(frontPsi)||frontPsi<10||frontPsi>100||!Number.isFinite(rearPsi)||rearPsi<10||rearPsi>100||!Number.isFinite(torqueNm)||torqueNm<30||torqueNm>300)throw new Error('Refresh the vehicle lookup to import manufacturer pressure and wheel torque data');
+  const source=job.vehicle?.tyreTechnical||job.vehicle?.activeTyreFitment||{};
+  return {
+    lockingWheelNutLocation:location,
+    lockingWheelNutRecipient:location==='Customer'?recipient:'',
+    punctureCause,
+    treadDepths,
+    pressureChecked:true,
+    torqueChecked:true,
+    fitmentChecked:true,
+    lockingWheelNutReturned:true,
+    pressures:{
+      front:{...(source.front?.pressure||{}),psi:Number(frontPsi.toFixed(1))},
+      rear:{...(source.rear?.pressure||{}),psi:Number(rearPsi.toFixed(1))}
+    },
+    torqueNm:Number(torqueNm.toFixed(1)),
+    technicians:[...new Set((technicians||[]).map(text).filter(Boolean))],
+    completedAt:new Date().toISOString()
+  };
+}
+
 function Warning({children}){return <div className="tirWarning"><span aria-hidden="true">!</span><strong>{children}</strong></div>;}
 function printReport(job,completion){
   const tech=technicalFor(job,completion);
