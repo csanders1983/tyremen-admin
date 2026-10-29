@@ -27,7 +27,7 @@ function lineDescription(line={}){
   return [size,loadSpeed,brand,model].filter(Boolean).join(' ').replace(/\bQTY\s*\d+\b/ig,'').replace(/\s+/g,' ').trim();
 }
 function tyreLines(job={}){
-  return (job.items||job.tyres||[]).filter(line=>{
+  return (job.items||job.tyres||job.workLines||[]).filter(line=>{
     const value=[line.type,line.category,line.name,line.description,line.serviceName].filter(Boolean).join(' ');
     return /tyre|puncture/i.test(value);
   });
