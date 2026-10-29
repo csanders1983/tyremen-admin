@@ -289,6 +289,21 @@ useEffect(() => {
     finally{setBusy("");}
   };
 
+  const saveTyreInspection = async () => {
+    if(!selected?.id||!tyreInspectionRequired||busy)return;
+    setBusy("inspection");setMessage("");
+    try{
+      const tyreCompletion=buildTyreCompletion(selected,inspectionValue,techniciansFor(selected));
+      const inspection={...(selected.inspection||{}),status:"ready-for-office",readyAt:new Date().toISOString(),readyBy:profile?.name||auth.currentUser?.email||"Tyremen staff"};
+      await updateDoc(doc(db,"jobs",selected.id),{tyreCompletion,inspection,updatedAt:new Date().toISOString()});
+      setSelected(current=>({...current,tyreCompletion,inspection,inspectionDraft:blankTyreCompletion({...current,tyreCompletion},tyreCompletion)}));
+      setMessage("Tyre inspection report saved to the workshop job.");
+    }catch(error){
+      setMessage(error.message||"Inspection report could not be saved.");
+      document.getElementById("tyre-inspection")?.scrollIntoView({behavior:"smooth",block:"start"});
+    }finally{setBusy("");}
+  };
+
   const completeAndInvoice = async () => {
     if (!selected?.id || busy) return;
     if (selected.invoiceId) {
@@ -792,7 +807,7 @@ Total: £${calculatedTotal.toFixed(2)}
                 );
               })}
 
-              {tyreInspectionRequired&&<div id="tyre-inspection"><TyreInspectionReport job={selected} value={inspectionValue} onChange={inspectionDraft=>setSelected(current=>({...current,inspectionDraft}))} onRefreshTechnical={refreshInspectionVehicle}/></div>}
+              {tyreInspectionRequired&&<div id="tyre-inspection"><TyreInspectionReport job={selected} value={inspectionValue} onChange={inspectionDraft=>setSelected(current=>({...current,inspectionDraft}))} onRefreshTechnical={refreshInspectionVehicle}/><div className="tfActions"><button type="button" className="adminBtn" disabled={Boolean(busy)} onClick={saveTyreInspection}>{busy==="inspection"?"Saving inspection…":"Save inspection report"}</button></div></div>}
 
               <div id="job-finish" className="adminButtonRow">
                 <button type="button" className="adminBtn" onClick={saveOrder} disabled={Boolean(busy) || isCompletedJob(selected) || selected.status === "Cancelled"}>
