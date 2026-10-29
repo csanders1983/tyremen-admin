@@ -113,7 +113,7 @@ function printReport(job,completion){
   return true;
 }
 
-export default function TyreInspectionReport({job={},value,onChange,readOnly=false,onRefreshTechnical,onPrintError}){
+export default function TyreInspectionReport({job={},value,onChange,readOnly=false,summaryOnly=false,onRefreshTechnical,onPrintError}){
   const completion=readOnly?(job.tyreCompletion||value||{}):(value||blankTyreCompletion(job));
   const tech=technicalFor(job,completion);
   const technicalMissing=tech.front.psi===''||tech.rear.psi===''||tech.torque==='';
@@ -131,7 +131,7 @@ export default function TyreInspectionReport({job={},value,onChange,readOnly=fal
       <div><span>Removed-wheel torque</span><strong>{tech.torque===''?'Not available':`${tech.torque} Nm`}</strong></div>
     </div>
     {technicalMissing&&!readOnly&&<div className="tirMissing"><div><strong>Vehicle safety data is incomplete</strong><span>Refresh the VRM lookup before completing this job. Values cannot be entered manually.</span></div>{onRefreshTechnical&&<button type="button" onClick={onRefreshTechnical}>Refresh vehicle data</button>}</div>}
-    <div className="tirWarnings">
+    {!summaryOnly&&<><div className="tirWarnings">
       {descriptions.length?descriptions.map((description,index)=><Warning key={index}>CHECK FITMENT · {description}</Warning>):<Warning>CHECK FITMENT · Confirm the tyre description on the sales order</Warning>}
       <Warning>RETURN LOCKING WHEEL NUT</Warning>
     </div>
@@ -153,6 +153,6 @@ export default function TyreInspectionReport({job={},value,onChange,readOnly=fal
     {!readOnly&&<div className="tirChecks">
       {[['pressureChecked','Pressures checked and set to the imported manufacturer values'],['torqueChecked','Removed wheels tightened to the imported manufacturer torque'],['fitmentChecked','Tyre size and full description checked against the fitted tyres'],['lockingWheelNutReturned','Locking wheel nut returned to the recorded location']].map(([key,label])=><label key={key}><input type="checkbox" required checked={completion[key]===true} onChange={event=>update({[key]:event.target.checked})}/><span>{label}</span></label>)}
     </div>}
-    {readOnly&&<footer className="tirFooter"><span>Completed by</span><strong>{(completion.technicians||job.technicians||[]).join(' · ')||'Not recorded'}</strong>{completion.completedAt&&<small>{new Date(completion.completedAt).toLocaleString('en-GB')}</small>}</footer>}
+    {readOnly&&<footer className="tirFooter"><span>Completed by</span><strong>{(completion.technicians||job.technicians||[]).join(' · ')||'Not recorded'}</strong>{completion.completedAt&&<small>{new Date(completion.completedAt).toLocaleString('en-GB')}</small>}</footer>}</>}
   </section>;
 }
