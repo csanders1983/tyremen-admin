@@ -138,7 +138,7 @@ useEffect(() => {
       .reduce((sum, item) => sum + Number(item.qty || 0), 0);
   }, [selected]);
 
-  const tyreInspectionRequired = Boolean(selected&&(selected.items||selected.tyres||[]).some(wheelWork));
+  const tyreInspectionRequired = Boolean(selected&&((selected.items?.length?selected.items:selected.tyres)||[]).some(wheelWork));
   const inspectionValue = selected ? blankTyreCompletion(selected,selected.inspectionDraft||selected.tyreCompletion) : null;
 
   const updateField = (field, value) => {
@@ -579,7 +579,7 @@ Total: £${calculatedTotal.toFixed(2)}
               </div>
 
               {!isCompletedJob(selected)&&selected.items?.some(tyreWork)&&selected.items?.some(line=>!tyreWork(line)&&!['CD','WB','TLV'].includes(line.stockNumber))&&<div className="bayRoutePanel"><strong>Bay route</strong><span>{firstBay==='tyres'?'Tyre bay → Workshop':'Workshop → Tyre bay'}</span><button type="button" onClick={async()=>{try{const first=firstBay==='tyres'?'service':'tyres';await workshopPost('updateWorkshopStage',{jobId:selected.id,revision:selected.stageRevision||0,action:'setFirst',first});setSelected(current=>({...current,bayWorkflow:{first},stageRevision:Number(current.stageRevision||0)+1}));setMessage('Bay order saved. The next bay receives the vehicle after handover.');}catch(e){setMessage(e.message);}}}>Change first bay</button></div>}
-              <nav className="jobSectionNav"><a href="#job-details">Customer & booking</a><a href="#job-items">Work & products</a>{tyreInspectionRequired&&<a href="#tyre-inspection">Tyre inspection</a>}<a href="#job-finish">Save & invoice</a></nav>
+              <nav className="jobSectionNav"><a href="#job-details">Customer & booking</a><a href="#job-items">Work & products</a>{selected.registration&&<a href="#tyre-inspection">{tyreInspectionRequired?"Tyre inspection":"Vehicle safety data"}</a>}<a href="#job-finish">Save & invoice</a></nav>
               {!isCompletedJob(selected) && <div className="workshopBoard"><button type="button" className="adminBtn" onClick={() => setEditingBooking(true)}>Edit booking date / time</button>{editingBooking && <WorkshopBookingEdit key={selected.id} job={selected} onClose={() => setEditingBooking(false)} onSaved={result => {setSelected(current => ({...current,...result}));setEditingBooking(false);setMessage("Booking moved. Shared diary updated.");}} />}</div>}
               <div id="job-details" className="adminFormGrid">
                 <label>
@@ -807,7 +807,7 @@ Total: £${calculatedTotal.toFixed(2)}
                 );
               })}
 
-              {tyreInspectionRequired&&<div id="tyre-inspection"><TyreInspectionReport job={selected} value={inspectionValue} onChange={inspectionDraft=>setSelected(current=>({...current,inspectionDraft}))} onRefreshTechnical={refreshInspectionVehicle}/><div className="tfActions"><button type="button" className="adminBtn" disabled={Boolean(busy)} onClick={saveTyreInspection}>{busy==="inspection"?"Saving inspection…":"Save inspection report"}</button></div></div>}
+              {selected.registration&&<div id="tyre-inspection"><TyreInspectionReport job={selected} value={inspectionValue} summaryOnly={!tyreInspectionRequired} onChange={inspectionDraft=>setSelected(current=>({...current,inspectionDraft}))} onRefreshTechnical={refreshInspectionVehicle}/>{tyreInspectionRequired&&<div className="tfActions"><button type="button" className="adminBtn" disabled={Boolean(busy)} onClick={saveTyreInspection}>{busy==="inspection"?"Saving inspection…":"Save inspection report"}</button></div>}</div>}
 
               <div id="job-finish" className="adminButtonRow">
                 <button type="button" className="adminBtn" onClick={saveOrder} disabled={Boolean(busy) || isCompletedJob(selected) || selected.status === "Cancelled"}>
