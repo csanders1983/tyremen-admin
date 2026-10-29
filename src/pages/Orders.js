@@ -6,10 +6,11 @@ import "../admin-pages.css";
 import "../tyre-foreman.css";
 import TechnicianPicker from "../components/TechnicianPicker";
 import WheelPositionPicker from "../components/WheelPositionPicker";
-import { techniciansFor,tyreWork } from "../lib/tyreWork";
+import { techniciansFor,tyreWork,wheelWork } from "../lib/tyreWork";
 import "../workshop-board.css";
 import WorkshopBookingEdit from "../components/WorkshopBookingEdit";
 import WorkshopHistory from "../components/WorkshopHistory";
+import TyreInspectionReport,{blankTyreCompletion,buildTyreCompletion} from "../components/TyreInspectionReport";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
@@ -136,6 +137,9 @@ useEffect(() => {
       .filter((item) => item.type === "tyre")
       .reduce((sum, item) => sum + Number(item.qty || 0), 0);
   }, [selected]);
+
+  const tyreInspectionRequired = Boolean(selected&&(selected.items||selected.tyres||[]).some(wheelWork));
+  const inspectionValue = selected ? blankTyreCompletion(selected,selected.inspectionDraft||selected.tyreCompletion) : null;
 
   const updateField = (field, value) => {
     setSelected((prev) => ({
@@ -274,6 +278,17 @@ useEffect(() => {
     });
   };
 
+  const refreshInspectionVehicle = async () => {
+    if(!selected?.registration||busy)return;
+    setBusy("vehicle");setMessage("");
+    try{
+      const result=await workshopPost('lookupTyreForemanVehicle',{registration:selected.registration,jobId:selected.id,refresh:true});
+      setSelected(current=>({...current,vehicle:result.vehicle}));
+      setMessage("Manufacturer tyre pressures and wheel torque refreshed.");
+    }catch(error){setMessage(error.message||"Vehicle safety data could not be refreshed.");}
+    finally{setBusy("");}
+  };
+
   const completeAndInvoice = async () => {
     if (!selected?.id || busy) return;
     if (selected.invoiceId) {
@@ -281,6 +296,11 @@ useEffect(() => {
       return;
     }
     if (!String(selected.name || "").trim()) return setMessage("Add the customer name before completing the job.");
+    let tyreCompletion=null;
+    if(tyreInspectionRequired){
+      try{tyreCompletion=buildTyreCompletion(selected,inspectionValue,techniciansFor(selected));}
+      catch(error){setMessage(error.message);document.getElementById("tyre-inspection")?.scrollIntoView({behavior:"smooth",block:"start"});return;}
+    }
     const invoiceItems = buildInvoiceItems();
     if (!invoiceItems.some((item) => item.description.trim())) return setMessage("Add at least one completed work line.");
     if (!window.confirm(`Complete this job and create a VAT invoice for £${calculatedTotal.toFixed(2)}?`)) return;
@@ -292,7 +312,14 @@ useEffect(() => {
       // creates one idempotent invoice and links it back to this job.
       const latest = await getDoc(doc(db, "jobs", selected.id));
       if (!latest.exists() || latest.data().status === "Cancelled") throw new Error("This booking was cancelled. It cannot be invoiced.");
-      await updateDoc(doc(db, "jobs", selected.id), orderUpdate("Ready To Collect"));
+      const finalJobUpdate={
+        ...orderUpdate("Ready To Collect"),
+        ...(tyreCompletion?{
+          tyreCompletion,
+          inspection:{...(selected.inspection||{}),status:"ready-for-office",readyAt:new Date().toISOString(),readyBy:profile?.name||auth.currentUser?.email||"Tyremen staff"}
+        }:{})
+      };
+      await updateDoc(doc(db, "jobs", selected.id), finalJobUpdate);
       const token = await auth.currentUser.getIdToken();
       const vehicle = selected.vehicle || {};
       const response = await fetch(`${FUNCTIONS_ROOT}/createAdminInvoice`, {
@@ -322,6 +349,7 @@ useEffect(() => {
           vehicleData: vehicle,
           technician: selected.technicians?.[0] || selected.technician || "",
           technicians: techniciansFor(selected).filter(Boolean),
+          tyreCompletion,
           items: invoiceItems,
           amountPaid: Number(selected.amountPaid || 0),
           paymentMethod: selected.paymentMethod || "unpaid",
@@ -536,7 +564,7 @@ Total: £${calculatedTotal.toFixed(2)}
               </div>
 
               {!isCompletedJob(selected)&&selected.items?.some(tyreWork)&&selected.items?.some(line=>!tyreWork(line)&&!['CD','WB','TLV'].includes(line.stockNumber))&&<div className="bayRoutePanel"><strong>Bay route</strong><span>{firstBay==='tyres'?'Tyre bay → Workshop':'Workshop → Tyre bay'}</span><button type="button" onClick={async()=>{try{const first=firstBay==='tyres'?'service':'tyres';await workshopPost('updateWorkshopStage',{jobId:selected.id,revision:selected.stageRevision||0,action:'setFirst',first});setSelected(current=>({...current,bayWorkflow:{first},stageRevision:Number(current.stageRevision||0)+1}));setMessage('Bay order saved. The next bay receives the vehicle after handover.');}catch(e){setMessage(e.message);}}}>Change first bay</button></div>}
-              <nav className="jobSectionNav"><a href="#job-details">Customer & booking</a><a href="#job-items">Work & products</a><a href="#job-finish">Save & invoice</a></nav>
+              <nav className="jobSectionNav"><a href="#job-details">Customer & booking</a><a href="#job-items">Work & products</a>{tyreInspectionRequired&&<a href="#tyre-inspection">Tyre inspection</a>}<a href="#job-finish">Save & invoice</a></nav>
               {!isCompletedJob(selected) && <div className="workshopBoard"><button type="button" className="adminBtn" onClick={() => setEditingBooking(true)}>Edit booking date / time</button>{editingBooking && <WorkshopBookingEdit key={selected.id} job={selected} onClose={() => setEditingBooking(false)} onSaved={result => {setSelected(current => ({...current,...result}));setEditingBooking(false);setMessage("Booking moved. Shared diary updated.");}} />}</div>}
               <div id="job-details" className="adminFormGrid">
                 <label>
@@ -763,6 +791,8 @@ Total: £${calculatedTotal.toFixed(2)}
                   </details>
                 );
               })}
+
+              {tyreInspectionRequired&&<div id="tyre-inspection"><TyreInspectionReport job={selected} value={inspectionValue} onChange={inspectionDraft=>setSelected(current=>({...current,inspectionDraft}))} onRefreshTechnical={refreshInspectionVehicle}/></div>}
 
               <div id="job-finish" className="adminButtonRow">
                 <button type="button" className="adminBtn" onClick={saveOrder} disabled={Boolean(busy) || isCompletedJob(selected) || selected.status === "Cancelled"}>
