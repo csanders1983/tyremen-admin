@@ -1,3 +1,4 @@
+import documentTheme from './documentTheme';
 import bundled from './tyreBrandAssets';
 import {invoiceDescription,isTyre,tyreData} from './tyrePresentation';
 import { calculateInvoice, money } from "./invoiceMath";
@@ -11,6 +12,7 @@ const escapeHtml = (value) => String(value ?? "")
 
 export function buildInvoiceHtml(invoice) {
   const totals = calculateInvoice(invoice.items || []);
+  if(invoice.documentTemplateSnapshot)return documentTheme.html(documentTheme.prepare({...invoice,items:totals.lines,net:totals.net,vat:totals.vat,total:totals.total},{describe:invoiceDescription,brandLogo:l=>isTyre(l)?bundled[tyreData(l).brand.replace(/[^A-Z0-9]/g,'')]||tyreData(l).brandLogo:''}),invoice.documentTemplateSnapshot);
   const title = invoice.documentType === "credit-note" ? "CREDIT NOTE" : invoice.documentType === "order" ? "SALES ORDER" : invoice.documentType === "quote" ? "QUOTATION" : "VAT INVOICE";
   const grouped = new Set(invoice.workDescription ? (invoice.workLineIndices || []).filter((index) => Number.isInteger(index) && index >= 0 && index < totals.lines.length) : []);
   const groupLines = [...grouped].map((index) => totals.lines[index]);

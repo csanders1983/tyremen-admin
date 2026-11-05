@@ -17,9 +17,17 @@ import LegacyImport from "./pages/LegacyImport";
 import Directory from "./pages/Directory";
 import TyreForeman from "./pages/TyreForeman";
 import WorkshopBoard from "./pages/WorkshopBoard";
+import HR from "./pages/HR";
+import StaffPortal from "./pages/StaffPortal";
+import DocumentTemplates from "./pages/DocumentTemplates";
+import Marketing from "./pages/Marketing";
+import WebsiteOrders from "./pages/WebsiteOrders";
+import ManufacturerOffersAdmin from "./pages/ManufacturerOffersAdmin";
 
 function AdminHome() {
   const { role } = useAuth();
+  if (role === "employee") return <Navigate to="/staff" replace />;
+  if (role === "ecommerce") return <Navigate to="/website-orders" replace />;
   if (role === "tyre-foreman") return <Navigate to="/tyre-foreman" replace />;
   return role === "service-manager" ? <Navigate to="/workshop-screen" replace /> : <RequireAuth permission="dashboard"><Dashboard /></RequireAuth>;
 }
@@ -29,6 +37,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
        <Routes>
+        <Route path="/staff" element={<RequireAuth><StaffPortal /></RequireAuth>} />
         <Route path="/login" element={<Login />} />
         <Route path="/tyre-bay-screen" element={<RequireAuth permission="tyreForeman"><TyreForeman screen /></RequireAuth>} />
         <Route path="/workshop-screen" element={<RequireAuth permission="workshop"><WorkshopBoard screen /></RequireAuth>} />
@@ -37,6 +46,8 @@ export default function App() {
           <Route path="tyre-foreman" element={<RequireAuth permission="tyreForeman"><TyreForeman /></RequireAuth>} />
           <Route path="workshop" element={<RequireAuth permission="workshop"><WorkshopBoard /></RequireAuth>} />
           <Route path="orders" element={<RequireAuth permission="jobs"><Orders /></RequireAuth>} />
+          <Route path="website-orders" element={<RequireAuth permission="websiteOrders"><WebsiteOrders /></RequireAuth>} />
+          <Route path="manufacturer-offers" element={<RequireAuth permission="marketing"><ManufacturerOffersAdmin /></RequireAuth>} />
           <Route path="calendar" element={<RequireAuth permission="calendar"><Calendar /></RequireAuth>} />
           <Route path="tyres" element={<RequireAuth permission="stock"><Tyres /></RequireAuth>} />
           <Route path="services" element={<Navigate to="/pricing-control" replace />} />
@@ -44,6 +55,9 @@ export default function App() {
           <Route path="directory" element={<RequireAuth permission="sales"><Directory /></RequireAuth>} />
           <Route path="legacy-import" element={<RequireAuth permission="sales"><LegacyImport /></RequireAuth>} />
           <Route path="pages" element={<RequireAuth permission="pages"><PagesEditor /></RequireAuth>} />
+          <Route path="hr" element={<RequireAuth permission="hr"><HR /></RequireAuth>} />
+          <Route path="document-templates" element={<RequireAuth permission="templates"><DocumentTemplates /></RequireAuth>} />
+          <Route path="marketing" element={<RequireAuth permission="marketing"><Marketing /></RequireAuth>} />
           <Route path="settings" element={<RequireAuth permission="settings"><Settings /></RequireAuth>} />
           <Route path="pricing-control" element={<RequireAuth permission="pricing"><PricingControl /></RequireAuth>} />
           <Route path="very-cheap-tyres" element={<RequireAuth permission="vct"><VctCommerce /></RequireAuth>} />
