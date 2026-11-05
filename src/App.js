@@ -23,6 +23,7 @@ import DocumentTemplates from "./pages/DocumentTemplates";
 import Marketing from "./pages/Marketing";
 import WebsiteOrders from "./pages/WebsiteOrders";
 import ManufacturerOffersAdmin from "./pages/ManufacturerOffersAdmin";
+import ContentCentre from "./pages/ContentCentre";
 
 function AdminHome() {
   const { role } = useAuth();
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="orders" element={<RequireAuth permission="jobs"><Orders /></RequireAuth>} />
           <Route path="website-orders" element={<RequireAuth permission="websiteOrders"><WebsiteOrders /></RequireAuth>} />
           <Route path="manufacturer-offers" element={<RequireAuth permission="marketing"><ManufacturerOffersAdmin /></RequireAuth>} />
+          <Route path="content-centre" element={<RequireAuth permission="marketing"><ContentCentre /></RequireAuth>} />
           <Route path="calendar" element={<RequireAuth permission="calendar"><Calendar /></RequireAuth>} />
           <Route path="tyres" element={<RequireAuth permission="stock"><Tyres /></RequireAuth>} />
           <Route path="services" element={<Navigate to="/pricing-control" replace />} />

@@ -4,6 +4,7 @@ import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-do
 import { ROLE_LABELS, useAuth } from "../auth/AuthContext";
 import SystemIcon from "./SystemIcon";
 const groups = [
+  ["Website content", [["/content-centre", "Blogs, brands & models", "marketing", "pages"]]],
   ["Workspace", [["/", "Overview", "dashboard", "home"], ["/calendar", "Booking diary", "calendar", "calendar"], ["/workshop", "Workshop live", "workshop", "workshop"], ["/tyre-foreman", "Tyre bay live", "tyreForeman", "workshop"], ["/orders", "Jobs & completion", "jobs", "jobs"]]],
   ["Sales & customers", [["/website-orders", "Website orders", "websiteOrders", "jobs"], ["/sales", "Sales & invoices", "sales", "sales"], ["/directory", "Customers & vehicles", "sales", "people"], ["/marketing", "Marketing", "marketing", "people"], ["/manufacturer-offers", "Manufacturer offers", "marketing", "pricing"], ["/tyres", "Stock & services", "stock", "stock"]]],
   ["Management", [["/hr", "People & HR", "hr", "people"], ["/document-templates", "Document templates", "templates", "pages"], ["/staff", "My staff portal", null, "people"], ["/pricing-control", "Pricing & capacity", "pricing", "pricing"], ["/pages", "Website pages", "pages", "pages"], ["/very-cheap-tyres", "Very Cheap Tyres", "vct", "stock"], ["/users", "Staff access", "users", "people"], ["/settings", "Settings", "settings", "settings"]]],
@@ -24,9 +25,9 @@ export default function AdminLayout() {
   }, []);
   const submitSearch = (event) => { event.preventDefault(); if (search.trim().length >= 2) navigate(`/directory?q=${encodeURIComponent(search.trim())}`); };
   return <div className="adminShell systemShell">
-    <div className="sysMobileBar"><Link to="/" aria-label="Tyremen workspace"><img className="sysMobileLogo" src="/tyremen-logo-white.svg" alt="Tyremen" /><small>WORKSPACE</small></Link><button type="button" aria-expanded={menuOpen} aria-controls="system-sidebar" onClick={() => setMenuOpen(!menuOpen)}><SystemIcon name={menuOpen ? "close" : "menu"} />{menuOpen ? "Close" : "Menu"}</button></div>
+    <div className="sysMobileBar"><Link to="/" aria-label="Tyremen workspace"><img className="sysMobileLogo" src="/tyremen-content-logo.png" alt="Tyremen" /><small>WORKSPACE</small></Link><button type="button" aria-expanded={menuOpen} aria-controls="system-sidebar" onClick={() => setMenuOpen(!menuOpen)}><SystemIcon name={menuOpen ? "close" : "menu"} />{menuOpen ? "Close" : "Menu"}</button></div>
     <aside id="system-sidebar" className={`adminSidebar ${menuOpen ? "sysNavOpen" : ""}`}>
-      <Link className="sysBrand" to="/" aria-label="Tyremen workspace"><img src="/tyremen-logo-white.svg" alt="Tyremen — More Than Just Tyres" /><span>WORKSPACE <i>HULL</i></span></Link>
+      <Link className="sysBrand" to="/" aria-label="Tyremen workspace"><img src="/tyremen-content-logo.png" alt="Tyremen — More Than Just Tyres" /><span>WORKSPACE <i>HULL</i></span></Link>
       <nav className="adminNav" aria-label="Main navigation">{groups.map(([label, items]) => {
         const allowed = items.filter(([, , permission]) => permission === null || can(permission));
         return allowed.length > 0 && <div className="sysNavGroup" key={label}><span>{label}</span>{allowed.map(([url, text, , icon]) => <NavLink end={url === "/"} to={url} key={url}><SystemIcon name={icon} /><span>{text}</span></NavLink>)}</div>;
