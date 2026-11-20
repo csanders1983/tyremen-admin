@@ -44,7 +44,7 @@ export default function GuestWifiManager() {
   return <section style={{ padding: 24, maxWidth: 1050, margin: "auto", color: "#171717" }}>
     <h2>Guest Wi-Fi · Offers Manager</h2>
     <p>Edit the promotions shown before customers connect. Changes only appear after Publish.</p>
-    <p><a href="https://tyremen-system.web.app/guest-wifi" target="_blank" rel="noreferrer">Open customer portal preview ↗</a></p>
+    <p><a href="https://tyremen-system--pr2-feature-guest-wifi-p-akn9ex4z.web.app/guest-wifi" target="_blank" rel="noreferrer">Open customer portal preview (staging) ↗</a></p>
     <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 20 }}>
       <label>Countdown (seconds)<input style={field} type="number" min="5" max="120" value={data.countdown} onChange={e => setData({ ...data, countdown: e.target.value })} /></label>
       <label>Slide interval (seconds)<input style={field} type="number" min="2" max="30" value={data.slideSeconds} onChange={e => setData({ ...data, slideSeconds: e.target.value })} /></label>
