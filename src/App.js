@@ -17,6 +17,7 @@ import LegacyImport from "./pages/LegacyImport";
 import Directory from "./pages/Directory";
 import TyreForeman from "./pages/TyreForeman";
 import WorkshopBoard from "./pages/WorkshopBoard";
+import GuestWifiManager from "./pages/GuestWifiManager";
 
 function AdminHome() {
   const { role } = useAuth();
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="sales" element={<RequireAuth permission="sales"><Sales /></RequireAuth>} />
           <Route path="directory" element={<RequireAuth permission="sales"><Directory /></RequireAuth>} />
           <Route path="legacy-import" element={<RequireAuth permission="sales"><LegacyImport /></RequireAuth>} />
+          <Route path="guest-wifi" element={<RequireAuth permission="pages"><GuestWifiManager /></RequireAuth>} />
           <Route path="pages" element={<RequireAuth permission="pages"><PagesEditor /></RequireAuth>} />
           <Route path="settings" element={<RequireAuth permission="settings"><Settings /></RequireAuth>} />
           <Route path="pricing-control" element={<RequireAuth permission="pricing"><PricingControl /></RequireAuth>} />
