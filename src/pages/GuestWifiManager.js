@@ -9,7 +9,7 @@ const initial = [
   { id: "alignment", title: "WHEEL ALIGNMENT", price: "FROM £29.95", description: "Protect your tyres from uneven wear", image: "", enabled: true },
   { id: "tyres", title: "TYRE OFFERS", price: "GREAT PRICES", description: "Economy, mid-range and premium tyres", image: "", enabled: true }
 ];
-const base = { countdown: 20, slideSeconds: 5, offers: initial };
+const base = { countdown: 20, slideSeconds: 5, theme: "classic", themeInterval: 60, offers: initial };
 const uid = () => "offer-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
 
 export default function GuestWifiManager() {
@@ -35,7 +35,7 @@ export default function GuestWifiManager() {
         description: String(o.description).slice(0, 220), image: String(o.image || "").slice(0, 1000), enabled: !!o.enabled
       }));
       await setDoc(ref, { countdown: Math.min(120, Math.max(5, Number(data.countdown) || 20)),
-        slideSeconds: Math.min(30, Math.max(2, Number(data.slideSeconds) || 5)), offers, updatedAt: serverTimestamp() });
+        slideSeconds: Math.min(30, Math.max(2, Number(data.slideSeconds) || 5)), theme: ["classic","ladies","automatic"].includes(data.theme) ? data.theme : "classic", themeInterval: Math.min(3600, Math.max(15, Number(data.themeInterval) || 60)), offers, updatedAt: serverTimestamp() });
       setStatus("Published to Firestore.");
     } catch (e) { setStatus("Publish failed: " + e.message); }
     finally { setSaving(false); }
@@ -45,6 +45,20 @@ export default function GuestWifiManager() {
     <h2>Guest Wi-Fi · Offers Manager</h2>
     <p>Edit the promotions shown before customers connect. Changes only appear after Publish.</p>
     <p><a href="https://tyremen-system--pr2-feature-guest-wifi-p-akn9ex4z.web.app/guest-wifi" target="_blank" rel="noreferrer">Open customer portal preview (staging) ↗</a></p>
+    <div style={{border:"1px solid #ddd",borderLeft:"5px solid #ffd000",borderRadius:9,padding:16,marginBottom:20,background:"#fff"}}>
+      <h3 style={{margin:"0 0 8px"}}>Guest Wi-Fi appearance</h3>
+      <p style={{margin:"0 0 12px"}}>Choose the branding customers see. Changes take effect when you publish.</p>
+      <label style={{display:"block",maxWidth:380}}>Theme
+        <select style={field} value={data.theme || "classic"} onChange={e => setData(d => ({...d,theme:e.target.value}))}>
+          <option value="classic">Tyremen Classic — black & yellow</option>
+          <option value="ladies">Ladies of Tyremen — black & pink</option>
+          <option value="automatic">Automatic — alternate both themes</option>
+        </select>
+      </label>
+      {data.theme === "automatic" && <label style={{display:"block",maxWidth:380,marginTop:12}}>Switch theme every (seconds)
+        <input style={field} type="number" min="15" max="3600" value={data.themeInterval || 60} onChange={e => setData(d => ({...d,themeInterval:e.target.value}))}/>
+      </label>}
+    </div>
     <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 20 }}>
       <label>Countdown (seconds)<input style={field} type="number" min="5" max="120" value={data.countdown} onChange={e => setData({ ...data, countdown: e.target.value })} /></label>
       <label>Slide interval (seconds)<input style={field} type="number" min="2" max="30" value={data.slideSeconds} onChange={e => setData({ ...data, slideSeconds: e.target.value })} /></label>
